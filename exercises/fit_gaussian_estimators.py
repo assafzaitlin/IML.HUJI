@@ -4,10 +4,13 @@ import plotly.graph_objects as go
 import plotly.io as pio
 pio.templates.default = "simple_white"
 
+EXPECTED_VALUE = 10
+VARIANCE = 1
+NUM_OF_SAMPLES = 1000
 
 def test_univariate_gaussian():
-    # Question 1 - Draw samples and print fitted model
-    raise NotImplementedError()
+    np.random.normat(EXPECTED_VALUE, VARIANCE, NUM_OF_SAMPLES)
+
 
     # Question 2 - Empirically showing sample mean is consistent
     raise NotImplementedError()

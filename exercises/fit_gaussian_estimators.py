@@ -62,8 +62,9 @@ def test_multivariate_gaussian():
     print(mv_gaussian.cov_)
     # Question 5 - Likelihood evaluation
     results = []
-    for f1 in np.linspace(-10, 10, 200):
-        for f3 in np.linspace(-10, 10, 200):
+    vals_range = np.linspace(-10, 10, 200)
+    for f1 in vals_range:
+        for f3 in vals_range:
             mu = np.array([f1, 0, f3, 0])
             log_likelihood = MultivariateGaussian.log_likelihood(mu, MV_COV,
                                                                  samples)
@@ -76,7 +77,7 @@ def test_multivariate_gaussian():
     argmax = df.iloc[df[LOG_LIKELIHOOD_COL].idxmax()]
     max_f1, max_f3, likelihood = argmax[F1_COL], argmax[F3_COL], argmax[LOG_LIKELIHOOD_COL]
     likelihood = format(likelihood, '.3f')
-    print(f"maximal log likelihood values are: (f1: {max_f1}, f3: {max_f3}, log likelihood: {likelihood})")
+    print(f"(f1: {max_f1}, f3: {max_f3}, log likelihood: {likelihood})")
 
 
 if __name__ == '__main__':

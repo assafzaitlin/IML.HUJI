@@ -203,6 +203,8 @@ class MultivariateGaussian:
             log_exp_power = np.matmul(np.matmul(normalized_sample.transpose(),
                                                 cov_inverse),
                                       normalized_sample)
+            if isinstance(log_exp_power, np.ndarray):
+                log_exp_power = log_exp_power.sum()
             log_likelihood = -0.5 * (cov_log_det + dlog_2pi + log_exp_power)
             log_likelihood_sum += log_likelihood
         return log_likelihood_sum

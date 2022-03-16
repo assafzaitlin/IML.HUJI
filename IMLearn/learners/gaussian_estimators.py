@@ -1,13 +1,14 @@
 from __future__ import annotations
-import numpy as np
 from numpy.linalg import inv, det, slogdet
+import numpy as np
+import math
 
 
 class UnivariateGaussian:
     """
     Class for univariate Gaussian Distribution Estimator
     """
-    def __init__(self, biased_var: bool = False) -> UnivariateGaussian:
+    def __init__(self, biased_var: bool = False) -> None:
         """
         Estimator for univariate Gaussian mean and variance parameters
 
@@ -51,8 +52,8 @@ class UnivariateGaussian:
         Sets `self.mu_`, `self.var_` attributes according to calculated estimation (where
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
-
+        self.mu_ = X.mean()
+        self.var_ = sum((X - self.mu_) ** 2) / (X.size - 1)
         self.fitted_ = True
         return self
 
@@ -76,7 +77,8 @@ class UnivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+        exp_power = -1 * ((X - self.mu_) ** 2 / (2 * self.var_))
+        return (1 / (2 * math.pi * self.var_) ** 0.5) * math.e ** exp_power
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -143,8 +145,8 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
-
+        self.mu_ = np.mean(X, axis=0)
+        self.cov_ = np.cov(X, rowvar=False)
         self.fitted_ = True
         return self
 
@@ -189,4 +191,18 @@ class MultivariateGaussian:
         log_likelihood: float
             log-likelihood calculated over all input data and under given parameters of Gaussian
         """
-        raise NotImplementedError()
+        cov_inverse = np.linalg.inv(cov)
+        cov_log_det = slogdet(cov)
+        cov_log_det = cov_log_det[0] * cov_log_det[1]
+        log_likelihood_sum = 0
+        d = len(mu)
+        log_2pi = np.log(2 * np.pi)
+        dlog_2pi = d * log_2pi
+        for sample in X:
+            normalized_sample = sample - mu
+            log_exp_power = np.matmul(np.matmul(normalized_sample.transpose(),
+                                                cov_inverse),
+                                      normalized_sample)
+            log_likelihood = -0.5 * (cov_log_det + dlog_2pi + log_exp_power)
+            log_likelihood_sum += log_likelihood
+        return log_likelihood_sum

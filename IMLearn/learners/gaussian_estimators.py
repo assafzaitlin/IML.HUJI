@@ -177,7 +177,14 @@ class MultivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+        normalized = X - self.mu_
+        cov_inverse = np.linalg.inv(self.cov_)
+        exp_power = -0.5 * np.matmul(np.matmul(normalized, cov_inverse),
+                                     normalized.transpose())
+        d = len(self.mu_)
+        det_cov = np.linalg.det(self.cov_)
+        results = (1 / ((2 * np.pi) ** d * det_cov)) * np.e ** exp_power
+        return results.sum(axis=0)
 
     @staticmethod
     def log_likelihood(mu: np.ndarray, cov: np.ndarray, X: np.ndarray) -> float:
@@ -201,17 +208,20 @@ class MultivariateGaussian:
         cov_inverse = np.linalg.inv(cov)
         cov_log_det = slogdet(cov)
         cov_log_det = cov_log_det[0] * cov_log_det[1]
-        log_likelihood_sum = 0
         d = len(mu)
         log_2pi = np.log(2 * np.pi)
         dlog_2pi = d * log_2pi
-        for sample in X:
-            normalized_sample = sample - mu
-            log_exp_power = np.matmul(np.matmul(normalized_sample.transpose(),
-                                                cov_inverse),
-                                      normalized_sample)
-            if isinstance(log_exp_power, np.ndarray):
-                log_exp_power = log_exp_power.sum()
-            log_likelihood = -0.5 * (cov_log_det + dlog_2pi + log_exp_power)
-            log_likelihood_sum += log_likelihood
-        return log_likelihood_sum
+        normalized_samples = X - mu
+        mul_result = np.sum(normalized_samples @ cov_inverse * normalized_samples)
+        samples_num = len(X)
+        return -0.5 * (samples_num * dlog_2pi - samples_num * cov_log_det + mul_result)
+        # for sample in X:
+        #     normalized_sample = sample - mu
+        #     log_exp_power = np.matmul(np.matmul(normalized_sample.transpose(),
+        #                                         cov_inverse),
+        #                               normalized_sample)
+        #     if isinstance(log_exp_power, np.ndarray):
+        #         log_exp_power = log_exp_power.sum()
+        #     log_likelihood = -0.5 * (cov_log_det + dlog_2pi + log_exp_power)
+        #     log_likelihood_sum += log_likelihood
+        # return log_likelihood_sum

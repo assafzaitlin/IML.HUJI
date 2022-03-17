@@ -35,7 +35,7 @@ def test_univariate_gaussian():
     uni_variate_gaussian = UnivariateGaussian()
     samples = np.random.normal(EXPECTED_VALUE, VARIANCE, NUM_OF_SAMPLES)
     uni_variate_gaussian = uni_variate_gaussian.fit(samples)
-    print(f"({FORMAT(uni_variate_gaussian.mu_)}, {FORMAT(uni_variate_gaussian.var_)}")
+    print(f"({FORMAT(uni_variate_gaussian.mu_)}, {FORMAT(uni_variate_gaussian.var_)})")
 
     # Question 2
     num_of_samples = SAMPLES_DIFF

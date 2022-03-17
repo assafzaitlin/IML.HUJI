@@ -28,13 +28,14 @@ MV_HEATMAP_TITLE = "Log Likelihood Heatmap based on f1, f3 values"
 F1_COL = 'f1'
 F3_COL = 'f3'
 LOG_LIKELIHOOD_COL = 'Log Likelihood'
+FORMAT = lambda x: format(x, '.3f')
 
 def test_univariate_gaussian():
     # Question 1
     uni_variate_gaussian = UnivariateGaussian()
     samples = np.random.normal(EXPECTED_VALUE, VARIANCE, NUM_OF_SAMPLES)
     uni_variate_gaussian = uni_variate_gaussian.fit(samples)
-    print(f"({uni_variate_gaussian.mu_}, {uni_variate_gaussian.var_})")
+    print(f"({FORMAT(uni_variate_gaussian.mu_)}, {FORMAT(uni_variate_gaussian.var_)}")
 
     # Question 2
     num_of_samples = SAMPLES_DIFF
@@ -75,8 +76,7 @@ def test_multivariate_gaussian():
                        title=MV_HEATMAP_TITLE).show()
     # Question 6 - Maximum likelihood
     argmax = df.iloc[df[LOG_LIKELIHOOD_COL].idxmax()]
-    max_f1, max_f3, likelihood = argmax[F1_COL], argmax[F3_COL], argmax[LOG_LIKELIHOOD_COL]
-    likelihood = format(likelihood, '.3f')
+    max_f1, max_f3, likelihood = FORMAT(argmax[F1_COL]), FORMAT(argmax[F3_COL]), FORMAT(argmax[LOG_LIKELIHOOD_COL])
     print(f"(f1: {max_f1}, f3: {max_f3}, log likelihood: {likelihood})")
 
 

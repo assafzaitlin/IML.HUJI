@@ -58,7 +58,7 @@ def test_multivariate_gaussian():
     # Question 4 - Draw samples and print fitted model
     samples = np.random.multivariate_normal(MV_MEAN, MV_COV, MV_NUM_OF_SAMPLES)
     mv_gaussian = MultivariateGaussian()
-    mv_gaussian.fit(samples)
+    mv_gaussian = mv_gaussian.fit(samples)
     print(mv_gaussian.mu_)
     print(mv_gaussian.cov_)
     # Question 5 - Likelihood evaluation

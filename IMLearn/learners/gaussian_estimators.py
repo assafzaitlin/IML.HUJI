@@ -52,7 +52,7 @@ class UnivariateGaussian:
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
         self.mu_ = X.mean()
-        self.var_ = sum((X - self.mu_) ** 2) / (X.size - 1)
+        self.var_ = np.sum((X - self.mu_) ** 2) / (X.size - 1)
         self.fitted_ = True
         return self
 
@@ -179,12 +179,14 @@ class MultivariateGaussian:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
         normalized = X - self.mu_
         cov_inverse = np.linalg.inv(self.cov_)
-        exp_power = -0.5 * np.matmul(np.matmul(normalized, cov_inverse),
-                                     normalized.transpose())
+        exp_power = np.matmul(np.matmul(normalized, cov_inverse),
+                              normalized.transpose())
+        exp_power *= -0.5
         d = len(self.mu_)
         det_cov = np.linalg.det(self.cov_)
-        results = (1 / ((2 * np.pi) ** d * det_cov)) * np.e ** exp_power
-        return results.sum(axis=0)
+        denominator = (((2 * np.pi) ** d) * det_cov) ** 0.5
+        results = (np.e ** exp_power) / denominator
+        return results.diagonal()
 
     @staticmethod
     def log_likelihood(mu: np.ndarray, cov: np.ndarray, X: np.ndarray) -> float:
@@ -214,14 +216,4 @@ class MultivariateGaussian:
         normalized_samples = X - mu
         mul_result = np.sum(normalized_samples @ cov_inverse * normalized_samples)
         samples_num = len(X)
-        return -0.5 * (samples_num * dlog_2pi - samples_num * cov_log_det + mul_result)
-        # for sample in X:
-        #     normalized_sample = sample - mu
-        #     log_exp_power = np.matmul(np.matmul(normalized_sample.transpose(),
-        #                                         cov_inverse),
-        #                               normalized_sample)
-        #     if isinstance(log_exp_power, np.ndarray):
-        #         log_exp_power = log_exp_power.sum()
-        #     log_likelihood = -0.5 * (cov_log_det + dlog_2pi + log_exp_power)
-        #     log_likelihood_sum += log_likelihood
-        # return log_likelihood_sum
+        return -0.5 * (samples_num * dlog_2pi + samples_num * cov_log_det + mul_result)

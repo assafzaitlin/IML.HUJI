@@ -12,7 +12,7 @@ class LinearRegression(BaseEstimator):
     Solving Ordinary Least Squares optimization problem
     """
 
-    def __init__(self, include_intercept: bool = True) -> LinearRegression:
+    def __init__(self, include_intercept: bool = True):
         """
         Instantiate a linear regression estimator
 
@@ -84,4 +84,5 @@ class LinearRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        raise NotImplementedError()
+        prediction = self._predict(X)
+        return sum([(prediction[i] - y[i]) ** 2 for i in range(len(y))])

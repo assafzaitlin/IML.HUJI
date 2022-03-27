@@ -52,9 +52,10 @@ class LinearRegression(BaseEstimator):
         """
         if self.include_intercept_:
             X = np.c_[np.ones(X.shape[0]), X]
-        pseudo_inverse = pinv(X)
-        self.coefs_ = np.matmul(pseudo_inverse, y)
-        self.fitted_ = True
+        transposed = X.transpose()
+        pseudo_inverse = pinv(transposed)
+        pseudo_inverse = pseudo_inverse.transpose()
+        self.coefs_ = pseudo_inverse @ y
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -70,11 +71,9 @@ class LinearRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        if not self.fitted_:
-            raise ValueError("Estimator must first be fitted")
         if self.include_intercept_:
             X = np.c_[np.ones(X.shape[0]), X]
-        return np.matmul(X, self.coefs_)
+        return X @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -93,7 +92,5 @@ class LinearRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        if not self.fitted_:
-            raise ValueError("Estimator must first be fitted")
         prediction = self._predict(X)
         return mean_square_error(y, prediction)

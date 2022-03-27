@@ -21,10 +21,17 @@ ZIPCODE_COL = 'zipcode'
 LOT_AREA15_COL = 'sqft_lot15'
 HOUSE_AREA15_COL = 'sqft_living15'
 CONDITION_COL = 'condition'
+WATERFRONT_COL = 'waterfront'
+VIEW_COL = 'view'
+GRADE_COL = 'grade'
+GRADE_RANGE = list(range(1, 14))
+VIEW_RANGE = list(range(1, 5))
+CONDITION_RANGE = list(range(1, 6))
 DF_COLUMNS = [DATE_COL, BEDROOMS_COL, BATHROOMS_COL, HOUSE_AREA_COL,
-              LOT_AREA_COL, FLOORS_COL, 'waterfront', 'view', CONDITION_COL,
-              'grade', 'sqft_above', 'sqft_basement', BUILT_COL, RENOVATED_COL,
-              ZIPCODE_COL, HOUSE_AREA15_COL, LOT_AREA15_COL]
+              LOT_AREA_COL, FLOORS_COL, WATERFRONT_COL, VIEW_COL,
+              CONDITION_COL, GRADE_COL, 'sqft_above', 'sqft_basement',
+              BUILT_COL, RENOVATED_COL, ZIPCODE_COL, HOUSE_AREA15_COL,
+              LOT_AREA15_COL]
 PRICE_COL = 'price'
 AGE_COL = 'house_age'
 YARD_COL = 'sqft_yard'
@@ -81,7 +88,11 @@ def load_data(filename: str) -> Tuple[pd.DataFrame, pd.Series]:
     df = df[(df[DATE_COL] > MINIMAL_YEAR) & (df[PRICE_COL] > 0) &
             (df[BEDROOMS_COL] > 0) & (df[FLOORS_COL] > 0) &
             (df[BATHROOMS_COL] > 0) & (df[HOUSE_AREA_COL] > 0) &
-            (df[LOT_AREA_COL] > 0) & (df[BUILT_COL] > 0)]
+            (df[LOT_AREA_COL] > 0) & (df[BUILT_COL] > 0) &
+            (df[WATERFRONT_COL].isin([0, 1])) &
+            (df[GRADE_COL].isin(GRADE_RANGE)) &
+            (df[VIEW_COL].isin(VIEW_RANGE)) &
+            (df[CONDITION_COL].isin(CONDITION_RANGE))]
     df[YARD_COL] = df[LOT_AREA_COL] - df[HOUSE_AREA_COL]
     df[YARD15_COL] = df[LOT_AREA15_COL] - df[HOUSE_AREA15_COL]
     df[RENOVATED_COL] = df[[RENOVATED_COL, BUILT_COL]].max(axis=1)
@@ -140,9 +151,8 @@ if __name__ == '__main__':
     # Question 2 - Feature evaluation with respect to response
     feature_evaluation(X, y)
 
-    """
     # Question 3 - Split samples into training- and testing sets.
-    raise NotImplementedError()
+    training_X, training_y, test_X, test_y = split_train_test(X, y)
 
     # Question 4 - Fit model over increasing percentages of the overall training data
     # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
@@ -151,5 +161,40 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
-    raise NotImplementedError()
-    """
+
+    X = test_X.to_numpy()
+    y = test_y.to_numpy()
+    losses = []
+    for p in range(10, 101):
+        loss_over_same_pctg = []
+        for i in range(10):
+            pctg = p / 100
+            partial_training_X = training_X.sample(frac=pctg)
+            partial_training_y = training_y.take(partial_training_X.index)
+            model = LinearRegression()
+            model.fit(partial_training_X.to_numpy(),
+                      partial_training_y.to_numpy())
+            loss = model.loss(X, y)
+            loss_over_same_pctg.append(loss)
+        loss_mean = np.mean(loss_over_same_pctg)
+        loss_std = np.std(loss_over_same_pctg)
+        losses.append((p, loss_mean, loss_std))
+    mean = np.array([i[1] for i in losses])
+    std = np.array([i[2] for i in losses])
+    pctg = list(range(10, 101))
+    f = go.Scatter(x=pctg, y=mean, mode='markers+lines', name='Mean loss',
+                   marker={'color': 'blue', 'opacity': .7})
+    f2 = go.Scatter(x=pctg, y=mean - 2 * std, fill=None, mode='lines',
+                    line={'color': 'lightgrey'}, showlegend=False)
+    f3 = go.Scatter(x=pctg, y=mean + 2 * std, fill='tonexty', mode='lines',
+                    line={'color': 'lightgrey'}, showlegend=False)
+    layout = go.Layout(title="Mean loss of houses' price prediction by learning set size",
+                       xaxis={'title': '% of learning set size'},
+                       yaxis={'title': 'Mean loss'})
+    frame = go.Frame(data=[f, f2, f3], layout=layout)
+    fig = go.Figure(data=frame['data'], frames=[frame],
+                    layout=go.Layout(title=frame['layout']['title'],
+                                     xaxis=frame['layout']['xaxis'],
+                                     yaxis=frame['layout']['yaxis'])
+                    )
+    fig.show()

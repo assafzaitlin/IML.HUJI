@@ -24,8 +24,9 @@ CONDITION_COL = 'condition'
 WATERFRONT_COL = 'waterfront'
 VIEW_COL = 'view'
 GRADE_COL = 'grade'
+HAS_YARD_COL = 'has_yard'
 GRADE_RANGE = list(range(1, 14))
-VIEW_RANGE = list(range(1, 5))
+VIEW_RANGE = list(range(5))
 CONDITION_RANGE = list(range(1, 6))
 DF_COLUMNS = [DATE_COL, BEDROOMS_COL, BATHROOMS_COL, HOUSE_AREA_COL,
               LOT_AREA_COL, FLOORS_COL, WATERFRONT_COL, VIEW_COL,
@@ -94,17 +95,18 @@ def load_data(filename: str) -> Tuple[pd.DataFrame, pd.Series]:
             (df[VIEW_COL].isin(VIEW_RANGE)) &
             (df[CONDITION_COL].isin(CONDITION_RANGE))]
     df[YARD_COL] = df[LOT_AREA_COL] - df[HOUSE_AREA_COL]
+    df[HAS_YARD_COL] = (df[YARD_COL] > 0).apply(int)
     df[YARD15_COL] = df[LOT_AREA15_COL] - df[HOUSE_AREA15_COL]
     df[RENOVATED_COL] = df[[RENOVATED_COL, BUILT_COL]].max(axis=1)
     df[AGE_COL] = df[DATE_COL] - df[BUILT_COL]
-    df[LAST_RENOVATED_COL] = df[DATE_COL] - df[RENOVATED_COL]
-    df[ZIPCODE_COL] = df[ZIPCODE_COL].apply(lambda x: ZIPCODE_TO_COL.get(x, OTHER_ZIPCODE))
+    df[ZIPCODE_COL] = df[ZIPCODE_COL].apply(
+        lambda x: ZIPCODE_TO_COL.get(x, OTHER_ZIPCODE))
     zipcode_dummies = pd.get_dummies(df[ZIPCODE_COL])
     df = pd.concat([df, zipcode_dummies], axis=1)
     df = df[(df[AGE_COL] >= 0) & (df[YARD_COL] >= 0) &
-            (df[LAST_RENOVATED_COL] >= 0) & (df[YARD15_COL] >= 0)]
+            (df[YARD15_COL] >= 0)]
     results = df[PRICE_COL]
-    df.drop([ZIPCODE_COL, PRICE_COL, RENOVATED_COL, BUILT_COL, DATE_COL,
+    df.drop([ZIPCODE_COL, PRICE_COL, DATE_COL, BUILT_COL,
              LOT_AREA_COL, LOT_AREA15_COL], axis=1, inplace=True)
     return df, results
 
@@ -149,7 +151,7 @@ if __name__ == '__main__':
     X, y = load_data(TRAIN_DATA_PATH)
 
     # Question 2 - Feature evaluation with respect to response
-    feature_evaluation(X, y)
+    # feature_evaluation(X, y)
 
     # Question 3 - Split samples into training- and testing sets.
     training_X, training_y, test_X, test_y = split_train_test(X, y)
@@ -167,8 +169,8 @@ if __name__ == '__main__':
     losses = []
     for p in range(10, 101):
         loss_over_same_pctg = []
+        pctg = p / 100
         for i in range(10):
-            pctg = p / 100
             partial_training_X = training_X.sample(frac=pctg)
             partial_training_y = training_y.take(partial_training_X.index)
             model = LinearRegression()

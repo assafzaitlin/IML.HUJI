@@ -16,9 +16,8 @@ def mean_square_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     -------
     MSE of given predictions
     """
-    sum_of_errors = sum([(y_true[i] - y_pred[i]) ** 2 for i in range(len(y_true))])
-    return sum_of_errors / len(y_true)
-
+    square_errors = (y_true - y_pred) ** 2
+    return float(np.mean(square_errors))
 
 def misclassification_error(y_true: np.ndarray, y_pred: np.ndarray, normalize: bool = True) -> float:
     """

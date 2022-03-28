@@ -40,19 +40,6 @@ YARD15_COL = 'sqft_yard15'
 LAST_RENOVATED_COL = 'years_since_renovated'
 MINIMAL_YEAR = 2000 # Sales before that year are probably invalid data
 TRAIN_DATA_PATH = '../datasets/house_prices.csv'
-ZIPCODE_TO_COL = {
-    98103: 'zipcode_98103',
-    98038: 'zipcode_98038',
-    98115: 'zipcode_98115',
-    98052: 'zipcode_98052',
-    98117: 'zipcode_98117',
-    98042: 'zipcode_98042',
-    98034: 'zipcode_98034',
-    98118: 'zipcode_98118',
-    98023: 'zipcode_98023',
-    98006: 'zipcode_98006',
-    98133: 'zipcode_98113',
-}
 OTHER_ZIPCODE = 'zipcode_other'
 FEATURES_TO_SAVE = [HOUSE_AREA_COL, AGE_COL]
 
@@ -99,8 +86,7 @@ def load_data(filename: str) -> Tuple[pd.DataFrame, pd.Series]:
     df[YARD15_COL] = df[LOT_AREA15_COL] - df[HOUSE_AREA15_COL]
     df[RENOVATED_COL] = df[[RENOVATED_COL, BUILT_COL]].max(axis=1)
     df[AGE_COL] = df[DATE_COL] - df[BUILT_COL]
-    df[ZIPCODE_COL] = df[ZIPCODE_COL].apply(
-        lambda x: ZIPCODE_TO_COL.get(x, OTHER_ZIPCODE))
+    df[ZIPCODE_COL] = df[ZIPCODE_COL].apply(lambda x: f'zipcode_{x}')
     zipcode_dummies = pd.get_dummies(df[ZIPCODE_COL])
     df = pd.concat([df, zipcode_dummies], axis=1)
     df = df[(df[AGE_COL] >= 0) & (df[YARD_COL] >= 0) &
@@ -151,7 +137,7 @@ if __name__ == '__main__':
     X, y = load_data(TRAIN_DATA_PATH)
 
     # Question 2 - Feature evaluation with respect to response
-    # feature_evaluation(X, y)
+    feature_evaluation(X, y)
 
     # Question 3 - Split samples into training- and testing sets.
     training_X, training_y, test_X, test_y = split_train_test(X, y)

@@ -1,6 +1,7 @@
 from IMLearn.learners.regressors import PolynomialFitting
 import IMLearn.learners.regressors.linear_regression
 from IMLearn.utils import split_train_test
+from datetime import datetime
 import plotly.express as px
 import plotly.io as pio
 import pandas as pd
@@ -31,40 +32,40 @@ def load_data(filename: str) -> pd.DataFrame:
     -------
     Design matrix and response vector (Temp)
     """
-    df = pd.read_csv(filename, parse_dates=[DATE_COL_INDEX])
-    df[DAY_OF_YEAR_COL] = df[DATE_COL].apply(lambda x: x.dayofyear)
-    # month_dummies = pd.get_dummies(df[MONTH_COL])
-    # df = pd.concat([df, month_dummies], axis=1)
-    df.drop([DATE_COL, CITY_COL, DAY_COL], axis=1,
-            inplace=True)
-    df = df[(df[TEMP_COL] < 50) & (df[TEMP_COL] > -15)]
+    df = pd.read_csv(filename)
+    # I'm not using parse dates because for some reason it sometimes
+    # interpreted dates as DD/MM/YYYY and sometimes as MM/DD/YYYY
+    df[DATE_COL] = pd.to_datetime(df[DATE_COL], format='%d/%m/%Y')
+    df = df[df[TEMP_COL] >= -12]
+    df[DAY_OF_YEAR_COL] = df[DATE_COL].dt.dayofyear
+    # df.drop([DATE_COL, CITY_COL, DAY_COL], axis=1,
+    #         inplace=True)
     return df
 
 if __name__ == '__main__':
-    np.random.seed(115)
+    np.random.seed(0)
 
     # Question 1 - Load and preprocessing of city temperature dataset
     df = load_data(DATA_PATH)
 
     # Question 2 - Exploring data for specific country
     israel_df = df[df[COUNTRY_COL] == "Israel"]
-    # israel_df[YEAR_COL] = israel_df[YEAR_COL].astype(str)
-    # px.scatter(israel_df, x=DAY_OF_YEAR_COL, y=TEMP_COL,
-    #            color=israel_df[YEAR_COL].astype(str),
-    #            title="Temperature by day of year").show()
+    px.scatter(israel_df, x=DAY_OF_YEAR_COL, y=TEMP_COL,
+               color=israel_df[YEAR_COL].astype(str),
+               title="Temperature by day of year").show()
     std_per_month = israel_df.groupby(MONTH_COL).agg(np.std)
-    # px.bar(std_per_month, x=std_per_month.index, y=TEMP_COL,
-    #        labels={TEMP_COL: 'Standard deviation of temperature'},
-    #        title="Standard deviation of temperature each month").show()
+    px.bar(std_per_month, x=std_per_month.index, y=TEMP_COL,
+           labels={TEMP_COL: 'Standard deviation of temperature'},
+           title="Standard deviation of temperature each month").show()
 
     # Question 3 - Exploring differences between countries
     grouped_by = df.groupby([COUNTRY_COL, MONTH_COL]).agg({TEMP_COL: [np.mean, np.std]})
     grouped_by.columns = ['Temp mean', 'Temp std']
     grouped_by.reset_index(inplace=True)
-    # px.line(grouped_by, x=MONTH_COL,
-    #         y="Temp mean",
-    #         color=COUNTRY_COL,
-    #         error_y="Temp std").show()
+    px.line(grouped_by, x=MONTH_COL,
+            y="Temp mean",
+            color=COUNTRY_COL,
+            error_y="Temp std").show()
 
     # Question 4 - Fitting model for different values of `k`
     israel_X_df = israel_df[[DAY_OF_YEAR_COL]]
@@ -78,11 +79,11 @@ if __name__ == '__main__':
         print(f"error for k={k}: {error}")
         errors.append((k, error))
     error_df = pd.DataFrame(errors, columns=['Polynomial degree', 'Error'])
-    # px.bar(error_df, x="Polynomial degree", y='Error',
-    #        title='Error in prediction by polynomial degree').show()
+    px.bar(error_df, x="Polynomial degree", y='Error',
+           title='Error in prediction by polynomial degree').show()
 
     # Question 5 - Evaluating fitted model on different countries
-    model = PolynomialFitting(4)
+    model = PolynomialFitting(5)
     train_X, train_y = israel_X_df, israel_df[TEMP_COL]
     model.fit(train_X.to_numpy(), train_y.to_numpy())
     error_by_country = []

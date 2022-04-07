@@ -1,4 +1,3 @@
-
 code\ examples/*.png
 code\ examples/*.gif
 *.png
@@ -9,4 +8,5 @@ __pycache__
 lab/.ipynb_checkpoints/
 code\ examples/.ipynb_checkpoints/
 .ipynb_checkpoints/
-
+**__pycache__
+**.ipynb_checkpoints

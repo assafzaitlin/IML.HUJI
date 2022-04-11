@@ -42,10 +42,9 @@ def run_perceptron():
 
         # Fit Perceptron and record loss in each fit iteration
         losses = []
-        def callback(p: Perceptron, X: np.ndarray, y: int):
-            prediction = p.predict(X)
-            loss = prediction - y
-            losses.append(abs(loss))
+        def callback(p: Perceptron, sample: np.ndarray, result: int):
+            loss = p.loss(X, y)
+            losses.append(loss)
 
         p = Perceptron(callback=callback)
         p.fit(X, y)

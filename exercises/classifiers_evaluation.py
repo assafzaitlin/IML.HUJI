@@ -87,28 +87,61 @@ def compare_gaussian_classifiers():
     """
     for f in ["gaussian1.npy", "gaussian2.npy"]:
         # Load dataset
-        raise NotImplementedError()
+        X, y = load_dataset(f"../datasets/{f}")
 
         # Fit models and predict over training set
-        raise NotImplementedError()
+        m1 = LDA()
+        m1.fit(X, y)
+        m1_prediction = m1.predict(X)
+        m2 = LDA()
+        m2.fit(X, y)
+        m2_prediction = m2.predict(X)
+        limits = np.array([X.min(axis=0) - 0.5, X.max(axis=0) + 0.5]).T
+        symbols = np.array(["circle", "triangle-up", 'square'])
 
         # Plot a figure with two suplots, showing the Gaussian Naive Bayes predictions on the left and LDA predictions
         # on the right. Plot title should specify dataset used and subplot titles should specify algorithm and accuracy
         # Create subplots
         from IMLearn.metrics import accuracy
-        raise NotImplementedError()
-
+        m1_accuracy = np.round(accuracy(y, m1_prediction), 5)
+        m2_accuracy = np.round(accuracy(y, m2_prediction), 5)
         # Add traces for data-points setting symbols and colors
-        raise NotImplementedError()
-
         # Add `X` dots specifying fitted Gaussians' means
-        raise NotImplementedError()
-
         # Add ellipses depicting the covariances of the fitted Gaussians
-        raise NotImplementedError()
-
+        fig = make_subplots(rows=1, cols=2, horizontal_spacing=0.01,
+                            subplot_titles=[f"LDA - Accuracy: {m1_accuracy}",
+                                            f"Gaussian Naive Bayes - Accuracy: {m2_accuracy}"])
+        for i, model in enumerate([m1, m2]):
+            fig.add_trace(decision_surface(model.predict, limits[0], limits[1],
+                                           showscale=False), row=1, col=i+1)
+            graph = go.Scatter(x=X[:, 0], y=X[:, 1], mode="markers",
+                               marker=dict(color=y, symbol=symbols[y],
+                                           colorscale=[custom[0], custom[-1]],
+                                           line=dict(color='black', width=1)),
+                               showlegend=False)
+            fig.add_trace(graph, row=1, col=i+1)
+            traces = []
+            points = []
+            for j, mu in enumerate(model.mu_):
+                points.append(mu)
+                if isinstance(model, LDA):
+                    cov = model.cov_
+                else:
+                    cov = np.diag(model.cov_[j])
+                ellipse = get_ellipse(mu, cov)
+                ellipse.showlegend = False
+                traces.append(ellipse)
+            points = np.array(points)
+            centers = go.Scatter(x=points[:, 0], y=points[:, 1], mode='markers',
+                                 marker={'color': 'black', 'symbol': 'x'},
+                                 showlegend=False)
+            traces.append(centers)
+            fig.add_traces(traces, rows=1, cols=i+1)
+        fig.update_layout(title=f"Sample: {f.split('.')[0]}",
+                          margin=dict(t=100)).update_xaxes(visible=False).update_yaxes(visible=False)
+        fig.show()
 
 if __name__ == '__main__':
     np.random.seed(0)
-    run_perceptron()
-    # compare_gaussian_classifiers()
+    # run_perceptron()
+    compare_gaussian_classifiers()

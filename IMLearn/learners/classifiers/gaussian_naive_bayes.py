@@ -94,20 +94,20 @@ class GaussianNaiveBayes(BaseEstimator):
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
         d = X.shape[1]
         const = -((d / 2) * np.log(2 * np.pi))
-        likelihoods = []
+        all_likelihoods = []
         for sample in X:
-            likelihood = []
+            sample_likelihoods = []
             for i, pi in enumerate(self.pi_):
                 var = self.vars_[i]
-                calc = np.log(pi) - np.prod(var)
+                likelihood = np.log(pi) - np.log(np.prod(var)) / 2
                 centered = sample - self.mu_[i]
                 inv = np.diagflat(1 / var)
-                calc -= centered.T @ (inv @ centered)
-                calc /= 2
-                calc += const
-                likelihood.append(calc)
-            likelihoods.append(likelihood)
-        return np.array(likelihoods)
+                calc = centered.T @ (inv @ centered)
+                likelihood -= calc / 2
+                likelihood += const
+                sample_likelihoods.append(likelihood)
+            all_likelihoods.append(sample_likelihoods)
+        return np.array(all_likelihoods)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

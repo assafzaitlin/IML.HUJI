@@ -98,13 +98,17 @@ class LDA(BaseEstimator):
             raise ValueError("Estimator must first be fitted before calling "
                              "`likelihood` function")
         likelihoods = []
+        d = self.cov_.shape[0]
+        const = (d / 2) * np.log(2 * np.pi) + 0.5 * det(self.cov_)
+        const *= -1
         for row in X:
             likelihood = []
+            sample_const = (row.T @ self._cov_inv) @ row
             for i, cls in enumerate(self.classes_):
                 mu = self.mu_[i]
                 a = self._cov_inv @ mu.T
                 b = np.log(self.pi_[i]) - 0.5 * (mu @ self._cov_inv @ mu.T)
-                likelihood.append((a @ row.T) + b)
+                likelihood.append((a @ row.T) + b + sample_const + const)
             likelihoods.append(likelihood)
         return np.array(likelihoods)
 

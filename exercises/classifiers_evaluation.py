@@ -93,7 +93,7 @@ def compare_gaussian_classifiers():
         m1 = LDA()
         m1.fit(X, y)
         m1_prediction = m1.predict(X)
-        m2 = LDA()
+        m2 = GaussianNaiveBayes()
         m2.fit(X, y)
         m2_prediction = m2.predict(X)
         limits = np.array([X.min(axis=0) - 0.5, X.max(axis=0) + 0.5]).T
@@ -127,7 +127,7 @@ def compare_gaussian_classifiers():
                 if isinstance(model, LDA):
                     cov = model.cov_
                 else:
-                    cov = np.diag(model.cov_[j])
+                    cov = np.diagflat(model.vars_[j])
                 ellipse = get_ellipse(mu, cov)
                 ellipse.showlegend = False
                 traces.append(ellipse)

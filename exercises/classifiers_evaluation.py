@@ -48,7 +48,7 @@ def run_perceptron():
 
         p = Perceptron(callback=callback)
         p.fit(X, y)
-        losses = [(i, losses[i]) for i in range(len(losses))]
+        losses = [(i + 1, losses[i]) for i in range(len(losses))]
         df = pd.DataFrame(losses, columns=['Number of iterations', 'Loss'])
 
         # Plot figure of loss as function of fitting iteration

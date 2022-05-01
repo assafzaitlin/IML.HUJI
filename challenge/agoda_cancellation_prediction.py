@@ -245,7 +245,7 @@ if __name__ == '__main__':
     # Load data
     X, y = load_data("../datasets/agoda_cancellation_train.csv", is_train=True)
 
-    test, _ = load_data("./test_sets/test_set_week_4.csv", is_train=False)
+    test, _ = load_data("./test_set_week_4.csv", is_train=False)
 
     # r"C:\Users\nivec\HUJI Drive\Year 2\Semester B\IML\IML.HUJI\challenge\test_set_week_1_labels.csv"
     # week1_X, _ = load_data("./test_set_week_1.csv", is_train=False)

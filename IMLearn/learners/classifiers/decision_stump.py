@@ -76,7 +76,7 @@ class DecisionStump(BaseEstimator):
         Feature values strictly below threshold are predicted as `-sign` whereas values which equal
         to or above the threshold are predicted as `sign`
         """
-        func = lambda x: self.sign_ if x[self.j_] < self.threshold_ else -1 * self.sign_
+        func = lambda x: self.sign_ if x[self.j_] >= self.threshold_ else -1 * self.sign_
         return np.apply_along_axis(func, 1, X)
 
     def _find_threshold(self, values: np.ndarray, labels: np.ndarray, sign: int) -> Tuple[float, float]:
@@ -117,11 +117,9 @@ class DecisionStump(BaseEstimator):
             assignment *= -1
         losses = np.zeros((labels.shape[0], 2))
         for i, threshold in enumerate(sorted_values):
-            loss = 0
-            for j, label in enumerate(sorted_labels):
-                if np.sign(label) != np.sign(assignment[j]):
-                    loss += np.abs(label)
-            loss /= assignment.shape[0]
+            loss = np.sum(np.abs(sorted_labels[np.sign(sorted_labels) !=
+                                               np.sign(assignment)]
+                                 )) / assignment.shape[0]
             losses[i] = (threshold, loss)
             assignment[i] *= -1
         return losses[np.argmin(losses, axis=0)[1]]
@@ -143,10 +141,6 @@ class DecisionStump(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        loss = 0
         predicted = self.predict(X)
-        for i, label in enumerate(y):
-            if np.sign(label) != np.sign(predicted[i]):
-                loss += np.abs(label)
-        loss /= y.shape[0]
+        loss = np.sum(np.abs(y[np.sign(y) != np.sign(predicted)])) / y.shape[0]
         return loss

@@ -2,6 +2,7 @@ import numpy as np
 from typing import Tuple
 from IMLearn.metalearners.adaboost import AdaBoost
 from IMLearn.learners.classifiers import DecisionStump
+from IMLearn.metrics.loss_functions import accuracy
 from utils import *
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -38,19 +39,79 @@ def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
     return X, y
 
 
+def create_decision_surface_scatter(model: AdaBoost, size: int, X: np.array,
+                                    y: np.array, symbols: np.array,
+                                    limits: np.array):
+    """
+    @param model: The model to predict by
+    @param size: number of base learners to use
+    @param X: The samples
+    @param y: The results
+    @param symbols: symbols to give to results
+    @param limits: The limits of the surface
+    Returns decision surface and scatter graph based on the parameters
+    """
+    predict_func = lambda x: model.partial_predict(x, size)
+    surface = decision_surface(predict_func, limits[0], limits[1],
+                               showscale=False)
+    graph = go.Scatter(x=X[:, 0], y=X[:, 1], mode="markers",
+                       marker=dict(color=y.astype(int),
+                                   symbol=symbols[y.astype(int)],
+                                   colorscale=[custom[0], custom[-1]],
+                                   line=dict(color='black', width=1)),
+                       showlegend=False)
+    return surface, graph
+
+
 def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=500):
-    (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
+    train_X, train_y = generate_data(train_size, noise)
+    test_X, test_y = generate_data(test_size, noise)
 
     # Question 1: Train- and test errors of AdaBoost in noiseless case
-    raise NotImplementedError()
+    model = AdaBoost(DecisionStump, n_learners)
+    model.fit(train_X, train_y)
+    losses = []
+    for T in range(1, n_learners + 1):
+        train_partial_loss = model.partial_loss(train_X, train_y, T)
+        test_partial_loss = model.partial_loss(test_X, test_y, T)
+        losses.append((test_partial_loss, T, 'Test samples'))
+        losses.append((train_partial_loss, T, 'Train samples'))
+    df = pd.DataFrame(losses, columns=['Loss', 'Num of fitted learners',
+                                       'Type'])
+    px.line(df, x='Num of fitted learners', y='Loss', color='Type').show()
 
     # Question 2: Plotting decision surfaces
-    T = [5, 50, 100, 250]
+    T = [5, 6, 7, 8]  # 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
-    raise NotImplementedError()
+    symbols = np.array(['', 'circle', 'square'])
+    fig = make_subplots(rows=2, cols=2, horizontal_spacing=0.01, subplot_titles=[
+        f"decision space using {t} models" for t in T])
+    performance = np.zeros((len(T), 2))
+    for i, t in enumerate(T):
+        loss = model.partial_loss(test_X, test_y, t)
+        performance[i] = (t, loss)
+        surface, graph = create_decision_surface_scatter(model, t, test_X,
+                                                         test_y, symbols, lims)
+        fig.add_trace(surface, row=int(i / 2) + 1, col=int(i % 2) + 1)
+        fig.add_trace(graph, row=int(i / 2) + 1, col=int(i % 2) + 1)
+    fig.update_layout(margin=dict(t=100)).update_xaxes(
+        visible=False).update_yaxes(visible=False)
+    fig.show()
 
     # Question 3: Decision surface of best performing ensemble
-    raise NotImplementedError()
+    best_performing = int(performance[np.argmin(performance, axis=0)[1]][0])
+    prediction = model.partial_predict(test_X, best_performing)
+    acc = accuracy(test_y, prediction)
+    title = f"Size: {best_performing}, Accuracy: {acc}"
+    fig2 = make_subplots(rows=1, cols=1, subplot_titles=[title])
+    surface, graph = create_decision_surface_scatter(model, best_performing,
+                                                     test_X, test_y, symbols,
+                                                     lims)
+    fig2.add_trace(surface, row=1, col=1)
+    fig2.add_trace(graph, row=1, col=1)
+    fig2.update_layout(margin=dict(t=100)).update_xaxes(
+        visible=False).update_yaxes(visible=False)
+    fig2.show()
 
     # Question 4: Decision surface with weighted samples
     raise NotImplementedError()
@@ -58,7 +119,4 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
 
 if __name__ == '__main__':
     np.random.seed(0)
-    X, y = generate_data(100, 0.1)
-    model = AdaBoost(DecisionStump, 100)
-    model.fit(X, y)
-    model.loss(X, y)
+    fit_and_evaluate_adaboost(0, n_learners=8)

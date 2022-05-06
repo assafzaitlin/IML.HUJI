@@ -50,7 +50,7 @@ class AdaBoost(BaseEstimator):
         """
         m = X.shape[0]
         self.models_ = []
-        self.weights_ = np.zeros(m)
+        self.weights_ = np.zeros(self.iterations_)
         self.D_ = np.ones(m)
         self.D_ /= m
         for i in range(self.iterations_):
@@ -78,7 +78,7 @@ class AdaBoost(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return self.partial_predict(X, len(self.models_))
+        return self.partial_predict(X, self.iterations_)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -97,7 +97,7 @@ class AdaBoost(BaseEstimator):
         loss : float
             Performance under misclassification loss function
         """
-        return self.partial_loss(X, y, len(self.models_))
+        return self.partial_loss(X, y, self.iterations_)
 
     def partial_predict(self, X: np.ndarray, T: int) -> np.ndarray:
         """
@@ -116,7 +116,7 @@ class AdaBoost(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        if T > len(self.models_) or T <= 0:
+        if T > self.iterations_ or T <= 0:
             raise Exception("Invalid number of models to use")
         prediction = np.zeros(X.shape[0])
         for i in range(T):
@@ -143,5 +143,6 @@ class AdaBoost(BaseEstimator):
         loss : float
             Performance under misclassification loss function
         """
+        from ..metrics import misclassification_error
         predicted = self.partial_predict(X, T)
-        return np.sum(np.abs(y[y != predicted])) / y.shape[0]
+        return misclassification_error(y, predicted)

@@ -41,7 +41,7 @@ def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
 
 def create_decision_surface_scatter(model: AdaBoost, size: int, X: np.array,
                                     y: np.array, symbols: np.array,
-                                    limits: np.array):
+                                    limits: np.array, weights=None):
     """
     @param model: The model to predict by
     @param size: number of base learners to use
@@ -49,17 +49,27 @@ def create_decision_surface_scatter(model: AdaBoost, size: int, X: np.array,
     @param y: The results
     @param symbols: symbols to give to results
     @param limits: The limits of the surface
+    @param weights: Weights for points in scatter plot
     Returns decision surface and scatter graph based on the parameters
     """
     predict_func = lambda x: model.partial_predict(x, size)
     surface = decision_surface(predict_func, limits[0], limits[1],
                                showscale=False)
-    graph = go.Scatter(x=X[:, 0], y=X[:, 1], mode="markers",
-                       marker=dict(color=y.astype(int),
-                                   symbol=symbols[y.astype(int)],
-                                   colorscale=[custom[0], custom[-1]],
-                                   line=dict(color='black', width=1)),
-                       showlegend=False)
+    if weights is None:
+        graph = go.Scatter(x=X[:, 0], y=X[:, 1], mode="markers",
+                           marker=dict(color=y.astype(int),
+                                       symbol=symbols[y.astype(int)],
+                                       colorscale=[custom[0], custom[-1]],
+                                       line=dict(color='black', width=1)),
+                           showlegend=False)
+    else:
+        graph = go.Scatter(x=X[:, 0], y=X[:, 1], mode="markers",
+                           marker=dict(color=y.astype(int),
+                                       symbol=symbols[y.astype(int)],
+                                       colorscale=[custom[0], custom[-1]],
+                                       line=dict(color='black', width=1),
+                                       size=weights),
+                           showlegend=False)
     return surface, graph
 
 
@@ -78,7 +88,8 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
         losses.append((train_partial_loss, T, 'Train samples'))
     df = pd.DataFrame(losses, columns=['Loss', 'Num of fitted learners',
                                        'Type'])
-    px.line(df, x='Num of fitted learners', y='Loss', color='Type').show()
+    px.line(df, x='Num of fitted learners', y='Loss', color='Type',
+            title='Loss as function of number of base estimators used').show()
 
     # Question 2: Plotting decision surfaces
     T = [5, 6, 7, 8]  # 50, 100, 250]
@@ -102,21 +113,29 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     best_performing = int(performance[np.argmin(performance, axis=0)[1]][0])
     prediction = model.partial_predict(test_X, best_performing)
     acc = accuracy(test_y, prediction)
-    title = f"Size: {best_performing}, Accuracy: {acc}"
-    fig2 = make_subplots(rows=1, cols=1, subplot_titles=[title])
+    title = f"Best predicting model. Size: {best_performing}, Accuracy: {acc}"
     surface, graph = create_decision_surface_scatter(model, best_performing,
                                                      test_X, test_y, symbols,
                                                      lims)
-    fig2.add_trace(surface, row=1, col=1)
-    fig2.add_trace(graph, row=1, col=1)
-    fig2.update_layout(margin=dict(t=100)).update_xaxes(
-        visible=False).update_yaxes(visible=False)
+    fig2 = go.Figure()
+    fig2.add_trace(surface)
+    fig2.add_trace(graph)
+    fig2.update_layout(title=title)
     fig2.show()
 
     # Question 4: Decision surface with weighted samples
-    raise NotImplementedError()
+    D = model.D_ / np.max(model.D_) * 5
+    fig3 = go.Figure()
+    surface, graph = create_decision_surface_scatter(model, n_learners,
+                                                     train_X, train_y, symbols,
+                                                     lims, D)
+    fig3.add_trace(surface)
+    fig3.add_trace(graph)
+    fig3.update_layout(title="Samples with size based on probability")
+    fig3.show()
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    fit_and_evaluate_adaboost(0, n_learners=8)
+    fit_and_evaluate_adaboost(0, n_learners=250)
+    fit_and_evaluate_adaboost(0.4, n_learners=250)

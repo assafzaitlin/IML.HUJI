@@ -89,10 +89,10 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     df = pd.DataFrame(losses, columns=['Loss', 'Num of fitted learners',
                                        'Type'])
     px.line(df, x='Num of fitted learners', y='Loss', color='Type',
-            title='Loss as function of number of base estimators used').show()
+            title=f'Loss as function of number of base estimators used, noise: {noise}').show()
 
     # Question 2: Plotting decision surfaces
-    T = [5, 6, 7, 8]  # 50, 100, 250]
+    T = [5, 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
     symbols = np.array(['', 'circle', 'square'])
     fig = make_subplots(rows=2, cols=2, horizontal_spacing=0.01, subplot_titles=[
@@ -131,11 +131,11 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
                                                      lims, D)
     fig3.add_trace(surface)
     fig3.add_trace(graph)
-    fig3.update_layout(title="Samples with size based on probability")
+    fig3.update_layout(title=f"Samples with size based on probability, with noise: {noise}")
     fig3.show()
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    fit_and_evaluate_adaboost(0, n_learners=250)
-    fit_and_evaluate_adaboost(0.4, n_learners=250)
+    # fit_and_evaluate_adaboost(0)
+    fit_and_evaluate_adaboost(0.4)

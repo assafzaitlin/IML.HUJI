@@ -39,23 +39,35 @@ class DecisionStump(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        loss_per_feature = np.array([self._find_threshold(feature, y, 1) for
-                                     feature in X.T])
-        loss_per_feature_negative = np.array([self._find_threshold(feature, y,
-                                                                   -1)
-                                              for feature in X.T])
-        minimal_ind = np.argmin(loss_per_feature, axis=0)[0]
-        minimal_ind_negative = np.argmin(loss_per_feature_negative, axis=0)[1]
+        # loss_per_feature = np.array([self._find_threshold(feature, y, 1) for
+        #                              feature in X.T])
+        # loss_per_feature_negative = np.array([self._find_threshold(feature, y,
+        #                                                            -1)
+        #                                       for feature in X.T])
+        # loss_per_feature = np.array(
+        #     [self._find_threshold(X[:, feature], y, sign) + (sign,) for
+        #      feature, sign in product(range(X.shape[1]), (1, -1))]
+        # )
+        loss_per_feature = []
+        for feature, sign in product(range(X.shape[1]), (1, -1)):
+            threshold, loss = self._find_threshold(X[:, feature], y, sign)
+            loss_per_feature.append((threshold, loss, sign, feature))
+        loss_per_feature = np.array(loss_per_feature)
+        minimal_ind = np.argmin(loss_per_feature, axis=0)[1]
+        # minimal_ind_negative = np.argmin(loss_per_feature_negative, axis=0)[1]
         minimal_loss = loss_per_feature[minimal_ind]
-        minimal_loss_negative = loss_per_feature_negative[minimal_ind_negative]
-        if minimal_loss[1] <= minimal_loss_negative[1]:
-            self.j_ = minimal_ind
-            self.sign_ = 1
-            self.threshold_ = minimal_loss[0]
-        else:
-            self.j_ = minimal_ind_negative
-            self.sign_ = -1
-            self.threshold_ = minimal_loss_negative[0]
+        # minimal_loss_negative = loss_per_feature_negative[minimal_ind_negative]
+        # if minimal_loss[1] <= minimal_loss_negative[1]:
+        #     self.j_ = minimal_ind
+        #     self.sign_ = 1
+        #     self.threshold_ = minimal_loss[0]
+        # else:
+        #     self.j_ = minimal_ind_negative
+        #     self.sign_ = -1
+        #     self.threshold_ = minimal_loss_negative[0]
+        self.j_ = int(minimal_loss[3])
+        self.sign_ = int(minimal_loss[2])
+        self.threshold_ = minimal_loss[0]
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -109,20 +121,31 @@ class DecisionStump(BaseEstimator):
         For every tested threshold, values strictly below threshold are predicted as `-sign` whereas values
         which equal to or above the threshold are predicted as `sign`
         """
-        sorted_indices = values.argsort()
-        sorted_values = values[sorted_indices]
-        sorted_labels = labels[sorted_indices]
-        assignment = np.ones(labels.shape[0])
-        if sign < 0:
-            assignment *= -1
+        # sorted_indices = values.argsort()
+        # sorted_values = values[sorted_indices]
+        # sorted_labels = labels[sorted_indices]
+        # assignment = np.ones(labels.shape[0])
+        # if sign < 0:
+        #     assignment *= -1
+        # losses = np.zeros((labels.shape[0], 2))
+        # for i, threshold in enumerate(sorted_values):
+        #     loss = np.sum(np.abs(sorted_labels[np.sign(sorted_labels) !=
+        #                                        np.sign(assignment)]
+        #                          )) / assignment.shape[0]
+        #     losses[i] = (threshold, loss)
+        #     assignment[i] *= -1
+        # return losses[np.argmin(losses, axis=0)[1]]
         losses = np.zeros((labels.shape[0], 2))
-        for i, threshold in enumerate(sorted_values):
-            loss = np.sum(np.abs(sorted_labels[np.sign(sorted_labels) !=
+        for i, threshold in enumerate(values):
+            assignment = np.where(values < threshold, -1 * sign, sign)
+            loss = np.sum(np.abs(labels[np.sign(labels) !=
                                                np.sign(assignment)]
                                  )) / assignment.shape[0]
             losses[i] = (threshold, loss)
             assignment[i] *= -1
-        return losses[np.argmin(losses, axis=0)[1]]
+        minimal = np.argmin(losses, axis=0)
+        minimal_loss = losses[minimal[1]]
+        return tuple(minimal_loss)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

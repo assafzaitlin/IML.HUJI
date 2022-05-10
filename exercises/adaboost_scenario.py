@@ -97,10 +97,10 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     symbols = np.array(['', 'circle', 'square'])
     fig = make_subplots(rows=2, cols=2, horizontal_spacing=0.01, subplot_titles=[
         f"decision space using {t} models" for t in T])
-    performance = np.zeros((len(T), 2))
+    # performance = np.zeros((len(T), 2))
     for i, t in enumerate(T):
-        loss = model.partial_loss(test_X, test_y, t)
-        performance[i] = (t, loss)
+        # loss = model.partial_loss(test_X, test_y, t)
+        # performance[i] = (t, loss)
         surface, graph = create_decision_surface_scatter(model, t, test_X,
                                                          test_y, symbols, lims)
         fig.add_trace(surface, row=int(i / 2) + 1, col=int(i % 2) + 1)
@@ -110,13 +110,20 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     fig.show()
 
     # Question 3: Decision surface of best performing ensemble
-    best_performing = int(performance[np.argmin(performance, axis=0)[1]][0])
-    prediction = model.partial_predict(test_X, best_performing)
-    acc = accuracy(test_y, prediction)
-    title = f"Best predicting model. Size: {best_performing}, Accuracy: {acc}"
-    surface, graph = create_decision_surface_scatter(model, best_performing,
-                                                     test_X, test_y, symbols,
-                                                     lims)
+    # best_performing = int(performance[np.argmin(performance, axis=0)[1]][0])
+    # prediction = model.partial_predict(test_X, best_performing)
+    # acc = accuracy(test_y, prediction)
+    size_to_loss = np.array([(i, model.partial_loss(test_X, test_y, i)) for i
+                             in range(1, n_learners + 1)])
+    best_t, best_loss = size_to_loss[np.argmin(size_to_loss, axis=0)[1]]
+    best_t = int(best_t)
+    prediction = model.partial_predict(test_X, best_t)
+    best_accuracy = accuracy(test_y, prediction)
+    acc2 = 1 - best_loss
+    print(f"best: {best_accuracy}, 2: {acc2}")
+    title = f"Best predicting model. Size: {best_t}, Accuracy: {best_accuracy}"
+    surface, graph = create_decision_surface_scatter(model, best_t, test_X,
+                                                     test_y, symbols, lims)
     fig2 = go.Figure()
     fig2.add_trace(surface)
     fig2.add_trace(graph)
@@ -137,5 +144,5 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # fit_and_evaluate_adaboost(0)
+    fit_and_evaluate_adaboost(0)
     fit_and_evaluate_adaboost(0.4)

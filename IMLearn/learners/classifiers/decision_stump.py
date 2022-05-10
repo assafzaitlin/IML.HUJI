@@ -135,14 +135,15 @@ class DecisionStump(BaseEstimator):
         #     losses[i] = (threshold, loss)
         #     assignment[i] *= -1
         # return losses[np.argmin(losses, axis=0)[1]]
-        losses = np.zeros((labels.shape[0], 2))
-        for i, threshold in enumerate(values):
+        thresholds = np.array([values.min() - 0.01, values.max() + 0.01] +
+                          values.tolist())
+        losses = np.zeros((thresholds.shape[0], 2))
+        for i, threshold in enumerate(thresholds):
             assignment = np.where(values < threshold, -1 * sign, sign)
             loss = np.sum(np.abs(labels[np.sign(labels) !=
                                                np.sign(assignment)]
                                  )) / assignment.shape[0]
             losses[i] = (threshold, loss)
-            assignment[i] *= -1
         minimal = np.argmin(losses, axis=0)
         minimal_loss = losses[minimal[1]]
         return tuple(minimal_loss)

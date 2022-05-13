@@ -120,7 +120,6 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     prediction = model.partial_predict(test_X, best_t)
     best_accuracy = accuracy(test_y, prediction)
     acc2 = 1 - best_loss
-    print(f"best: {best_accuracy}, 2: {acc2}")
     title = f"Best predicting model. Size: {best_t}, Accuracy: {best_accuracy}"
     surface, graph = create_decision_surface_scatter(model, best_t, test_X,
                                                      test_y, symbols, lims)

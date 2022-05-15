@@ -20,7 +20,6 @@ def load_data(filename: str, is_train: bool = False):
         Path to house prices dataset
     is_train: bool
         Whether it is training set
-
     Returns
     -------
     Design matrix and response vector in either of the following formats:
@@ -77,20 +76,22 @@ def load_data(filename: str, is_train: bool = False):
                        "checkin_date", "checkout_date",
                        "hotel_id", "hotel_country_code", "hotel_live_date",
                        "accommadation_type_name",
-                       "charge_option", "h_customer_id",
+                       "h_customer_id",
                        "customer_nationality",
                        "guest_nationality_country_name",
                        "origin_country_code",
                        "language", "original_payment_method",
                        "original_payment_type", "original_payment_currency",
-                       "cancellation_policy_code", "is_first_booking",
+                       "cancellation_policy_code",
                        "hotel_area_code", "hotel_brand_code",
                        "hotel_city_code", "hotel_chain_code",
                        "start_of_week_next_month",
-                       # Columns I tried to return:
                        "hotel_star_rating", "no_of_room",
                        "guest_is_not_the_customer",
                        "no_of_adults", "no_of_children", "no_of_extra_bed",
+                       # Columns I tried to return:
+                       "is_first_booking",
+                       "charge_option",
                        "cancelled_in_these_dates"]
 
     df["has_special_request"] = 0
@@ -117,6 +118,18 @@ def load_data(filename: str, is_train: bool = False):
     # df["charge_option"] = df["charge_option"].apply(lambda x:
     #                                                 charge_option_dict.get(x,
     #                                                                       0))
+
+    # common_accommodation_type = ["Hotel", "Resort",
+    #                              "Guest House / Bed & Breakfast",
+    #                              "Hostel", "Serviced Apartment", "Apartment"]
+    # df.accommadation_type_name = df.accommadation_type_name.apply(
+    #     lambda x: x if x in common_accommodation_type else "other")
+    # dummies = pd.get_dummies(df.accommadation_type_name)
+    # for accom_type in common_accommodation_type:
+    #     if accom_type not in dummies.columns:
+    #         dummies[accom_type] = 0
+    # dummies = dummies[common_accommodation_type]
+    # df = pd.concat([df, dummies], axis=1)
 
     if is_train:
         df = df[df.cancellation_policy_code != "UNKNOWN"]
@@ -219,21 +232,16 @@ def _parse_cancellation_code(code: str) -> Tuple[int, bool, dict]:
 def evaluate_and_export(estimator, X: np.ndarray, filename: str):
     """
     Export to specified file the prediction results of given estimator on given testset.
-
     File saved is in csv format with a single column named 'predicted_values' and n_samples rows containing
     predicted values.
-
     Parameters
     ----------
     estimator: BaseEstimator or any object implementing predict() method as in BaseEstimator (for example sklearn)
         Fitted estimator to use for prediction
-
     X: ndarray of shape (n_samples, n_features)
         Test design matrix to predict its responses
-
     filename:
         path to store file at
-
     """
     pd.DataFrame(estimator.predict_with_threshold(X, threshold=0.08),
                  columns=["predicted_values"]).to_csv(filename, index=False)
@@ -245,28 +253,48 @@ if __name__ == '__main__':
     # Load data
     X, y = load_data("../datasets/agoda_cancellation_train.csv", is_train=True)
 
-    test, _ = load_data("./test_set_week_4.csv", is_train=False)
+    test, _ = load_data("./test_sets/week_6_test_data.csv", is_train=False)
 
-    # r"C:\Users\nivec\HUJI Drive\Year 2\Semester B\IML\IML.HUJI\challenge\test_set_week_1_labels.csv"
     # week1_X, _ = load_data("./test_set_week_1.csv", is_train=False)
     # week1_y = pd.read_csv("./test_set_week_1_labels.csv")["label"]
     # week2_X, _ = load_data("./test_set_week_2.csv", is_train=False)
     # week2_y = pd.read_csv("./test_set_week_2_labels.csv")["label"]
-    #
+    # week3_X, _ = load_data("./test_sets/test_set_week_3.csv", is_train=False)
+    # week3_y = pd.read_csv("./test_sets/week_3_labels.csv")["cancel"]
+    # week4_X, _ = load_data("./test_sets/test_set_week_4.csv", is_train=False)
+    # week4_y = pd.read_csv("./test_sets/week_4_labels.csv")["cancel"]
+    # week5_X, _ = load_data("./test_sets/week_5_test_data.csv", is_train=False)
+    # week5_y = pd.read_csv("./test_sets/week_5_labels.csv")["cancel"]
+
     # train_X, test_X, train_y, test_y = train_test_split(X, y, test_size=0.25)
 
-    # print("Week 1 loss test")
+    # print("\nWeek 1 loss test")
     # check_estimator_on_labels1 = AgodaCancellationEstimator()
     # check_estimator_on_labels1.fit(X, y)
     # check_estimator_on_labels1.loss(week1_X, week1_y)
-    # print("Week 2 loss test")
+    # print("\nWeek 2 loss test")
     # check_estimator_on_labels2 = AgodaCancellationEstimator()
     # check_estimator_on_labels2.fit(X, y)
     # check_estimator_on_labels2.loss(week2_X, week2_y)
-    # print("Train-Test partition loss test")
+    # print("\nWeek 3 loss test")
+    # check_estimator_on_labels3 = AgodaCancellationEstimator()
+    # check_estimator_on_labels3.fit(X, y)
+    # check_estimator_on_labels3.loss(week3_X, week3_y)
+    # print("\nWeek 4 loss test")
+    # check_estimator_on_labels4 = AgodaCancellationEstimator()
+    # check_estimator_on_labels4.fit(X, y)
+    # check_estimator_on_labels4.loss(week4_X, week4_y)
+    # print("\nWeek 5 loss test")
+    # check_estimator_on_labels1 = AgodaCancellationEstimator()
+    # check_estimator_on_labels1.fit(X, y)
+    # check_estimator_on_labels1.loss(week5_X, week5_y)
+    #
+    # print("\nTrain-Test partition loss test")
     # check_estimator_on_train = AgodaCancellationEstimator()
     # check_estimator_on_train.fit(train_X, train_y)
     # check_estimator_on_train.loss(test_X.to_numpy(), test_y.to_numpy())
+
+
 
     # Fit model over data
     estimator = AgodaCancellationEstimator()

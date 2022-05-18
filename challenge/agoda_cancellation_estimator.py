@@ -92,9 +92,9 @@ class AgodaCancellationEstimator(BaseEstimator):
         """
         this is a fictive function, only for the API to run
         """
-        return X
+        return self.predict_with_threshold(X)
 
-    def predict_with_threshold(self, X: np.ndarray, threshold: float = 0.5) \
+    def predict_with_threshold(self, X: np.ndarray, threshold: float = 0.08) \
             -> np.ndarray:
         """
         Predict responses for given samples using fitted estimator

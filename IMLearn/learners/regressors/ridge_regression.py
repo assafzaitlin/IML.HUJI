@@ -62,7 +62,7 @@ class RidgeRegression(BaseEstimator):
         if self.include_intercept_:
             X = np.c_[np.ones(X.shape[0]), X]
         transposed = X.T
-        dim = X.shape[0]
+        dim = X.shape[1]
         I = np.diagflat(np.ones(dim))
         first = transposed @ X
         first += self.lam_ * I
@@ -84,6 +84,8 @@ class RidgeRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
+        if self.include_intercept_:
+            X = np.c_[np.ones(X.shape[0]), X]
         return X @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:

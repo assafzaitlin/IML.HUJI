@@ -92,13 +92,55 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
         Number of regularization parameter values to evaluate for each of the algorithms
     """
     # Question 6 - Load diabetes dataset and split into training and testing portions
-    raise NotImplementedError()
+    X, y = datasets.load_diabetes(return_X_y=True)
+    train_X, train_y = X[:n_samples], y[:n_samples]
+    test_X, test_y = X[n_samples:], y[n_samples:]
 
     # Question 7 - Perform CV for different values of the regularization parameter for Ridge and Lasso regressions
-    raise NotImplementedError()
+    lambdas = np.linspace(0, 2.5, n_evaluations)
+    lasso_train_errors = np.zeros(n_evaluations)
+    lasso_validation_errors = np.zeros(n_evaluations)
+    ridge_train_errors = np.zeros(n_evaluations)
+    ridge_validation_errors = np.zeros(n_evaluations)
+    for i, l in enumerate(lambdas):
+        estimator1 = RidgeRegression(l)
+        ridge_train_err, ridge_validation_err = cross_validate(estimator1, train_X,
+                                                         train_y,
+                                                         mean_square_error)
+        estimator2 = Lasso(l)
+        lasso_train_err, lasso_validation_err = cross_validate(estimator2, train_X,
+                                                         train_y,
+                                                         mean_square_error)
+        ridge_train_errors[i] = ridge_train_err
+        ridge_validation_errors[i] = ridge_validation_err
+        lasso_validation_errors[i] = lasso_validation_err
+        lasso_train_errors[i] = lasso_train_err
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(y=ridge_train_errors, x=lambdas,
+                             mode='lines+markers', name='ridge train error'))
+    fig.add_trace(go.Scatter(y=ridge_validation_errors, x=lambdas,
+                             mode='lines+markers', name='ridge validation error'))
+    fig.add_trace(go.Scatter(y=lasso_train_errors, x=lambdas,
+                             mode='lines+markers', name='lasso train error'))
+    fig.add_trace(go.Scatter(y=lasso_validation_errors, x=lambdas,
+                             mode='lines+markers', name='lasso validation error'))
+    fig.update_layout(title="Error of Ridge & Lasso regressors")
+    fig.show()
 
     # Question 8 - Compare best Ridge model, best Lasso model and Least Squares model
-    raise NotImplementedError()
+    for name, errors in (('ridge', ridge_validation_errors), ('lasso', lasso_validation_errors)):
+        min_ind = int(np.argmin(errors, axis=0))
+        min_lambda = round(lambdas[min_ind], 3)
+        print(f"optimal lambda value for {name} regressor is {min_lambda}")
+        for estimator, reg_name in ((RidgeRegression(min_lambda), 'ridge'),
+                                    (Lasso(min_lambda), 'lasso'),
+                                    (LinearRegression(), 'least squares')):
+
+            estimator.fit(train_X, train_y)
+            err = round(mean_square_error(test_y, estimator.predict(test_X)),
+                        3)
+            print(f"test error for {reg_name} regressor with lambda value {min_lambda} is {err}")
 
 
 if __name__ == '__main__':
@@ -106,3 +148,4 @@ if __name__ == '__main__':
     select_polynomial_degree()
     select_polynomial_degree(noise=0)
     select_polynomial_degree(n_samples=1500, noise=10)
+    select_regularization_parameter()

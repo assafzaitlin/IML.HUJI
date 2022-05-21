@@ -51,4 +51,3 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
         train_score += scoring(train_y, estimator.predict(train_X))
         validation_score += scoring(test_y, estimator.predict(test_X))
     return train_score / cv, validation_score / cv
-

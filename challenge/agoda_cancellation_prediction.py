@@ -253,18 +253,20 @@ if __name__ == '__main__':
     # Load data
     X, y = load_data("../datasets/agoda_cancellation_train.csv", is_train=True)
 
-    test, _ = load_data("./test_sets/week_6_test_data.csv", is_train=False)
+    # test, _ = load_data("./test_sets/week_7_test_data.csv", is_train=False)
 
-    # week1_X, _ = load_data("./test_set_week_1.csv", is_train=False)
-    # week1_y = pd.read_csv("./test_set_week_1_labels.csv")["label"]
-    # week2_X, _ = load_data("./test_set_week_2.csv", is_train=False)
-    # week2_y = pd.read_csv("./test_set_week_2_labels.csv")["label"]
-    # week3_X, _ = load_data("./test_sets/test_set_week_3.csv", is_train=False)
-    # week3_y = pd.read_csv("./test_sets/week_3_labels.csv")["cancel"]
-    # week4_X, _ = load_data("./test_sets/test_set_week_4.csv", is_train=False)
-    # week4_y = pd.read_csv("./test_sets/week_4_labels.csv")["cancel"]
-    # week5_X, _ = load_data("./test_sets/week_5_test_data.csv", is_train=False)
-    # week5_y = pd.read_csv("./test_sets/week_5_labels.csv")["cancel"]
+    week1_X, _ = load_data("./test_sets/test_set_week_1.csv", is_train=False)
+    week1_y = pd.read_csv("./test_sets/week_1_labels.csv")["cancel"]
+    week2_X, _ = load_data("./test_sets/test_set_week_2.csv", is_train=False)
+    week2_y = pd.read_csv("./test_sets/week_2_labels.csv")["cancel"]
+    week3_X, _ = load_data("./test_sets/test_set_week_3.csv", is_train=False)
+    week3_y = pd.read_csv("./test_sets/week_3_labels.csv")["cancel"]
+    week4_X, _ = load_data("./test_sets/test_set_week_4.csv", is_train=False)
+    week4_y = pd.read_csv("./test_sets/week_4_labels.csv")["cancel"]
+    week5_X, _ = load_data("./test_sets/week_5_test_data.csv", is_train=False)
+    week5_y = pd.read_csv("./test_sets/week_5_labels.csv")["cancel"]
+    week6_X, _ = load_data("./test_sets/week_6_test_data.csv", is_train=False)
+    week6_y = pd.read_csv("./test_sets/week_6_labels.csv")["cancel"]
 
     # train_X, test_X, train_y, test_y = train_test_split(X, y, test_size=0.25)
 
@@ -288,18 +290,34 @@ if __name__ == '__main__':
     # check_estimator_on_labels1 = AgodaCancellationEstimator()
     # check_estimator_on_labels1.fit(X, y)
     # check_estimator_on_labels1.loss(week5_X, week5_y)
+    # print("\nWeek 6 loss test")
+    # check_estimator_on_labels1 = AgodaCancellationEstimator()
+    # check_estimator_on_labels1.fit(X, y)
+    # check_estimator_on_labels1.loss(week6_X, week6_y)
     #
     # print("\nTrain-Test partition loss test")
     # check_estimator_on_train = AgodaCancellationEstimator()
     # check_estimator_on_train.fit(train_X, train_y)
     # check_estimator_on_train.loss(test_X.to_numpy(), test_y.to_numpy())
 
-
+    # Test for checking multiple estimators
+    samples = [
+        (week1_X, week1_y),
+        (week2_X, week2_y),
+        (week3_X, week3_y),
+        (week4_X, week4_y),
+        (week5_X, week5_y),
+        (week6_X, week6_y),
+    ]
+    estimator = AgodaCancellationEstimator(single=False)
+    estimator.fit(X, y)
+    df = estimator.loss_multiple(samples)
+    df.to_csv('./results/comparison.csv', index=False)
 
     # Fit model over data
-    estimator = AgodaCancellationEstimator()
-    estimator.fit(X, y)
-
-    # Store model predictions over test set
-    evaluate_and_export(estimator, test.to_numpy(),
-                        "2055501016_208543116_207129420.csv")
+    # estimator = AgodaCancellationEstimator()
+    # estimator.fit(X, y)
+    #
+    # # Store model predictions over test set
+    # evaluate_and_export(estimator, test.to_numpy(),
+    #                     "2055501016_208543116_207129420.csv")

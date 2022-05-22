@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import NoReturn
+from typing import NoReturn, List, Tuple
 from IMLearn.base import BaseEstimator
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier, \
     RandomForestRegressor, BaggingRegressor, AdaBoostRegressor, \
@@ -15,12 +16,40 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, \
     QuadraticDiscriminantAnalysis
 
 
+def f1(y_true, y_pred):
+    tp1 = tn1 = fp1 = fn1 = 0
+    tp0 = tn0 = fp0 = fn0 = 0
+    for i, prediction in enumerate(y_pred):
+        if y_true[i] == prediction:
+            if i == 1:
+                tp1 += 1
+                tn0 += 1
+            else:
+                tn1 += 1
+                tp0 += 1
+        else:
+            if i == 1:
+                fp1 += 1
+                fn0 += 1
+            else:
+                fn1 += 1
+                fp0 += 1
+    f1_1 = tp1 / (tp1 + 0.5 * (fp1 + fn1))
+    f1_0 = tp0 / (tp0 + 0.5 * (fp0 + fn0))
+    return (f1_0 + f1_1) * 0.5
+
+def apply_threshold(prediction, threshold):
+    """
+    Applies threshold on prediction
+    """
+    return np.array([1 if i >= threshold else 0 for i in prediction])
+
 class AgodaCancellationEstimator(BaseEstimator):
     """
     An estimator for solving the Agoda Cancellation challenge
     """
 
-    def __init__(self) -> AgodaCancellationEstimator:
+    def __init__(self, single=True) -> AgodaCancellationEstimator:
         """
         Instantiate an estimator for solving the Agoda Cancellation challenge
         Parameters
@@ -74,6 +103,26 @@ class AgodaCancellationEstimator(BaseEstimator):
         # self.model = LinearDiscriminantAnalysis(store_covariance=True) #19
         # self.model = QuadraticDiscriminantAnalysis(store_covariance=True) #20
 
+        if not single:
+            self.models = [(LogisticRegression(), 'Logistic regression')]
+            for i in range(1, 11):
+                desc = f"Random forest - Depth {i}"
+                model = RandomForestRegressor(max_depth=i, random_state=0)
+                self.models.append((model, desc))
+                desc = f"Decision tree - Depth {i}"
+                DecisionTreeRegressor(max_depth=i)
+                self.models.append((model, desc))
+            for i in range(80, 121):
+                desc = f"Adaboost regressor - estimators: {i}"
+                model = AdaBoostRegressor(n_estimators=i, random_state=0)
+                self.models.append((model, desc))
+            for i in range(3, 20):
+                desc = f"Knn with {i} neighbors"
+                model = KNeighborsRegressor(n_neighbors=i)
+                self.models.append((model, desc))
+        else:
+            self.models = None
+
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
         Fit an estimator for given samples
@@ -87,6 +136,9 @@ class AgodaCancellationEstimator(BaseEstimator):
         -----
         """
         self.model.fit(X, y)
+        if self.models is not None:
+            for model, _ in self.models:
+                model.fit(X, y)
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -158,3 +210,34 @@ class AgodaCancellationEstimator(BaseEstimator):
             #       f"accuracy: {accuracy}")
             print(f"threshold: {threshold}, f1 macro: {f1_macro}")
         return max(f1_macros)
+
+    def loss_multiple(self, samples: List[Tuple[np.ndarray, np.ndarray]]) -> \
+            pd.Dataframe:
+        if self.models is None:
+            return
+        results = np.zeros((len(self.models), 5))
+        descriptions = []
+        thresholds = np.linspace(0.01, 0.5, 200)
+        for i, m in enumerate(self.models):
+            model, desc = m
+            best_avg = 0
+            descriptions.append(desc)
+            for threshold in thresholds:
+                predictions = []
+                for X, y in samples:
+                    y_pred = apply_threshold(model.predict(X), threshold)
+                    f1_macro = f1(y, y_pred)
+                    predictions.append(f1_macro)
+                predictions = np.array(predictions)
+                avg = np.average(predictions)
+                if avg > best_avg:
+                    median = np.median(predictions)
+                    best_avg = avg
+                    min_pred = np.min(predictions)
+                    max_pred = np.max(predictions)
+                    results[i] = (threshold, median, avg, min_pred, max_pred)
+            print(f"Finished going over {desc}")
+        df = pd.DataFrame(results, columns=['threshold', 'median', 'avg',
+                                            'min', 'max'])
+        df['description'] = descriptions
+        return df

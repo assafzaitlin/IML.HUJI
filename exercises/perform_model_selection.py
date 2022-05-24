@@ -129,18 +129,19 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
     fig.show()
 
     # Question 8 - Compare best Ridge model, best Lasso model and Least Squares model
-    for name, errors in (('ridge', ridge_validation_errors), ('lasso', lasso_validation_errors)):
-        min_ind = int(np.argmin(errors, axis=0))
-        min_lambda = round(lambdas[min_ind], 3)
-        print(f"optimal lambda value for {name} regressor is {min_lambda}")
-        for estimator, reg_name in ((RidgeRegression(min_lambda), 'ridge'),
-                                    (Lasso(min_lambda), 'lasso'),
-                                    (LinearRegression(), 'least squares')):
-
-            estimator.fit(train_X, train_y)
-            err = round(mean_square_error(test_y, estimator.predict(test_X)),
-                        3)
-            print(f"test error for {reg_name} regressor with lambda value {min_lambda} is {err}")
+    ridge_best_lambda = lambdas[np.argmin(ridge_validation_errors, axis=0)]
+    lasso_best_lambda = lambdas[np.argmin(lasso_validation_errors, axis=0)]
+    ridge = RidgeRegression(ridge_best_lambda).fit(train_X, train_y)
+    lasso = Lasso(lasso_best_lambda).fit(train_X, train_y)
+    ls = LinearRegression().fit(train_X, train_y)
+    ridge_loss = round(ridge.loss(test_X, test_y), 3)
+    lasso_loss = round(mean_square_error(lasso.predict(test_X), test_y), 3)
+    ls_loss = round(ls.loss(test_X, test_y), 3)
+    ridge_best_lambda = round(ridge_best_lambda, 3)
+    lasso_best_lambda = round(lasso_best_lambda, 3)
+    print(f"LS est error: {ls_loss}, "
+          f"Ridge error: {ridge_loss} with optimal lambda: {ridge_best_lambda}, "
+          f"Lasso error: {lasso_loss} with optimal lambda: {lasso_best_lambda}")
 
 
 if __name__ == '__main__':

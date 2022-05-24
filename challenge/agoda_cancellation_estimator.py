@@ -217,27 +217,29 @@ class AgodaCancellationEstimator(BaseEstimator):
             return
         results = np.zeros((len(self.models), 5))
         descriptions = []
-        thresholds = np.linspace(0.01, 0.5, 200)
+        thresholds = np.linspace(0.01, 0.3, 200)
         for i, m in enumerate(self.models):
             model, desc = m
-            best_avg = 0
+            best_mean = 0
             descriptions.append(desc)
+            model_predictions = [model.predict(X) for X, _ in samples]
             for threshold in thresholds:
                 predictions = []
-                for X, y in samples:
-                    y_pred = apply_threshold(model.predict(X), threshold)
+                for j, data in enumerate(samples):
+                    _, y = data
+                    y_pred = apply_threshold(model_predictions[j], threshold)
                     f1_macro = f1(y, y_pred)
                     predictions.append(f1_macro)
                 predictions = np.array(predictions)
-                avg = np.average(predictions)
-                if avg > best_avg:
+                mean = np.mean(predictions)
+                if mean > best_mean:
                     median = np.median(predictions)
-                    best_avg = avg
+                    best_mean = mean
                     min_pred = np.min(predictions)
                     max_pred = np.max(predictions)
-                    results[i] = (threshold, median, avg, min_pred, max_pred)
+                    results[i] = (threshold, median, mean, min_pred, max_pred)
             print(f"Finished going over {desc}")
-        df = pd.DataFrame(results, columns=['threshold', 'median', 'avg',
+        df = pd.DataFrame(results, columns=['threshold', 'median', 'mean',
                                             'min', 'max'])
         df['description'] = descriptions
         return df

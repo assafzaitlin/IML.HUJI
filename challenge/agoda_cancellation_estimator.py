@@ -16,19 +16,24 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, \
     QuadraticDiscriminantAnalysis
 
 
-def f1(y_true, y_pred):
+def calc_f1_macro(y_true, y_pred):
+    """
+    @param y_true: The true values
+    @param y_pred: The predicted values
+    @return the f1 macro results for true and predicted values
+    """
     tp1 = tn1 = fp1 = fn1 = 0
     tp0 = tn0 = fp0 = fn0 = 0
-    for i, prediction in enumerate(y_pred):
-        if y_true[i] == prediction:
-            if i == 1:
+    for i, val in enumerate(y_pred):
+        if y_true[i] == val:
+            if val == 1:
                 tp1 += 1
                 tn0 += 1
             else:
                 tn1 += 1
                 tp0 += 1
         else:
-            if i == 1:
+            if val == 1:
                 fp1 += 1
                 fn0 += 1
             else:
@@ -36,7 +41,8 @@ def f1(y_true, y_pred):
                 fp0 += 1
     f1_1 = tp1 / (tp1 + 0.5 * (fp1 + fn1))
     f1_0 = tp0 / (tp0 + 0.5 * (fp0 + fn0))
-    return (f1_0 + f1_1) * 0.5
+    f1_macro = (f1_0 + f1_1) * 0.5
+    return f1_macro
 
 def apply_threshold(prediction, threshold):
     """
@@ -112,7 +118,7 @@ class AgodaCancellationEstimator(BaseEstimator):
                 desc = f"Decision tree - Depth {i}"
                 DecisionTreeRegressor(max_depth=i)
                 self.models.append((model, desc))
-            for i in range(80, 121):
+            for i in range(30, 81):
                 desc = f"Adaboost regressor - estimators: {i}"
                 model = AdaBoostRegressor(n_estimators=i, random_state=0)
                 self.models.append((model, desc))
@@ -177,37 +183,12 @@ class AgodaCancellationEstimator(BaseEstimator):
             Performance under loss function
         """
         f1_macros = []
-        # threshold_options = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9]
-        threshold_options = [i / 100 for i in range(1, 11)]
-        # threshold_options = [i / 100 + 0.1 for i in range(1, 11)]
+        # threshold_options = [i / 100 for i in range(1, 11)]
         threshold_options = [0.08]
         for threshold in threshold_options:
             res = self.predict_with_threshold(X, threshold)
-            tp1 = tn1 = fp1 = fn1 = 0
-            tp0 = tn0 = fp0 = fn0 = 0
-            for index, i in enumerate(res):
-                if y[index] == i:
-                    if i == 1:
-                        tp1 += 1
-                        tn0 += 1
-                    else:
-                        tn1 += 1
-                        tp0 += 1
-                else:
-                    if i == 1:
-                        fp1 += 1
-                        fn0 += 1
-                    else:
-                        fn1 += 1
-                        fp0 += 1
-            f1_1 = tp1 / (tp1 + 0.5 * (fp1 + fn1))
-            f1_0 = tp0 / (tp0 + 0.5 * (fp0 + fn0))
-            f1_macro = (f1_0 + f1_1) * 0.5
+            f1_macro = calc_f1_macro(y, res)
             f1_macros.append(f1_macro)
-            accuracy = (tp1 + tn1) / len(res)
-            # print(f"threshold: {threshold}, f1 for 1s: {f1_1},"
-            #       f" f1 for 0s: {f1_0}, , f1 macro: {f1_macro}, "
-            #       f"accuracy: {accuracy}")
             print(f"threshold: {threshold}, f1 macro: {f1_macro}")
         return max(f1_macros)
 
@@ -220,7 +201,7 @@ class AgodaCancellationEstimator(BaseEstimator):
         thresholds = np.linspace(0.01, 0.3, 200)
         for i, m in enumerate(self.models):
             model, desc = m
-            best_mean = 0
+            best_mean, median, min_pred, max_pred, best_threshold = 0, 0, 0, 0, 0
             descriptions.append(desc)
             model_predictions = [model.predict(X) for X, _ in samples]
             for threshold in thresholds:
@@ -228,7 +209,7 @@ class AgodaCancellationEstimator(BaseEstimator):
                 for j, data in enumerate(samples):
                     _, y = data
                     y_pred = apply_threshold(model_predictions[j], threshold)
-                    f1_macro = f1(y, y_pred)
+                    f1_macro = calc_f1_macro(y, y_pred)
                     predictions.append(f1_macro)
                 predictions = np.array(predictions)
                 mean = np.mean(predictions)
@@ -237,7 +218,8 @@ class AgodaCancellationEstimator(BaseEstimator):
                     best_mean = mean
                     min_pred = np.min(predictions)
                     max_pred = np.max(predictions)
-                    results[i] = (threshold, median, mean, min_pred, max_pred)
+                    best_threshold = threshold
+            results[i] = (best_threshold, median, best_mean, min_pred, max_pred)
             print(f"Finished going over {desc}")
         df = pd.DataFrame(results, columns=['threshold', 'median', 'mean',
                                             'min', 'max'])

@@ -314,6 +314,16 @@ if __name__ == '__main__':
     df = estimator.loss_multiple(samples)
     df.to_csv('./results/comparison.csv', index=False)
 
+    results = np.zeros(6)
+    for i, sample in enumerate(samples):
+        test_X, test_y = sample
+        results[i] = estimator.loss(test_X, test_y)
+    mean = np.mean(results)
+    median = np.median(results)
+    min_res = np.min(results)
+    max_res = np.max(results)
+    print(f"regular estimator: mean {mean}, median {median}, min {min_res}, max {max_res}")
+
     # Fit model over data
     # estimator = AgodaCancellationEstimator()
     # estimator.fit(X, y)

@@ -11,3 +11,5 @@ code\ examples/.ipynb_checkpoints/
 **__pycache__
 **.ipynb_checkpoints
 *.zip
+challenge/results/*.csv
+challenge/test_sets/*.csv

@@ -8,6 +8,7 @@ from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier, \
     RandomForestRegressor, BaggingRegressor, AdaBoostRegressor, \
     GradientBoostingRegressor
 from sklearn.svm import SVC, SVR
+from sklearn.neural_network import MLPRegressor
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.preprocessing import PolynomialFeatures
@@ -110,24 +111,33 @@ class AgodaCancellationEstimator(BaseEstimator):
         # self.model = QuadraticDiscriminantAnalysis(store_covariance=True) #20
 
         if not single:
-            self.models = [(LogisticRegression(), 'Logistic regression')]
-            for i in range(1, 11):
-                desc = f"Random forest - Depth {i}"
-                model = RandomForestRegressor(max_depth=i, random_state=0)
-                self.models.append((model, desc))
-                desc = f"Decision tree - Depth {i}"
-                DecisionTreeRegressor(max_depth=i)
-                self.models.append((model, desc))
-            for i in range(30, 81):
-                desc = f"Adaboost regressor - estimators: {i}"
-                model = AdaBoostRegressor(n_estimators=i, random_state=0)
-                self.models.append((model, desc))
-            for i in range(3, 20):
-                desc = f"Knn with {i} neighbors"
-                model = KNeighborsRegressor(n_neighbors=i)
-                self.models.append((model, desc))
+            self.models = []
+            for i in range(1, 6):
+                for j in range(50, 151, 10):
+                    desc = f"Random forest - Depth {i}, estimators: {j}"
+                    model = RandomForestRegressor(max_depth=i, random_state=0,
+                                                  n_estimators=j)
+                    self.models.append((model, desc))
+                # desc = f"Decision tree - Depth {i}"
+                # DecisionTreeRegressor(max_depth=i)
+                # self.models.append((model, desc))
+#            for i in range(10, 21):
+#                desc = f"Adaboost regressor - estimators: {i}"
+#                model = AdaBoostRegressor(n_estimators=i, random_state=0)
+#                self.models.append((model, desc))
+#            for i in range(3, 20):
+#                desc = f"Knn with {i} neighbors"
+#                model = KNeighborsRegressor(n_neighbors=i)
+#                self.models.append((model, desc))
         else:
             self.models = None
+
+    def fit_with_weight(self, X: np.ndarray, y: np.ndarray,
+                        weights: np.ndarray) -> NoReturn:
+        self.model.fit(X, y, sample_weight=weights)
+        if self.models is not None:
+            for model, _ in self.models:
+                model.fit(X, y, sample_weight=weights)
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -198,10 +208,10 @@ class AgodaCancellationEstimator(BaseEstimator):
             return
         results = np.zeros((len(self.models), 5))
         descriptions = []
-        thresholds = np.linspace(0.01, 0.3, 200)
+        thresholds = np.linspace(0, 0.3, 400)
         for i, m in enumerate(self.models):
             model, desc = m
-            best_mean, median, min_pred, max_pred, best_threshold = 0, 0, 0, 0, 0
+            mean, median, min_pred, max_pred, best_threshold = 0, 0, 0, 0, 0
             descriptions.append(desc)
             model_predictions = [model.predict(X) for X, _ in samples]
             for threshold in thresholds:
@@ -212,14 +222,14 @@ class AgodaCancellationEstimator(BaseEstimator):
                     f1_macro = calc_f1_macro(y, y_pred)
                     predictions.append(f1_macro)
                 predictions = np.array(predictions)
-                mean = np.mean(predictions)
-                if mean > best_mean:
+                current_min = np.min(predictions)
+                if current_min > min_pred:
                     median = np.median(predictions)
-                    best_mean = mean
+                    mean = np.mean(predictions)
                     min_pred = np.min(predictions)
                     max_pred = np.max(predictions)
                     best_threshold = threshold
-            results[i] = (best_threshold, median, best_mean, min_pred, max_pred)
+            results[i] = (best_threshold, median, mean, min_pred, max_pred)
             print(f"Finished going over {desc}")
         df = pd.DataFrame(results, columns=['threshold', 'median', 'mean',
                                             'min', 'max'])

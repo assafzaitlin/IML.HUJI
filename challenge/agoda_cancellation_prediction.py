@@ -301,28 +301,35 @@ if __name__ == '__main__':
     # check_estimator_on_train.loss(test_X.to_numpy(), test_y.to_numpy())
 
     # Test for checking multiple estimators
-    samples = [
-        (week1_X, week1_y),
-        (week2_X, week2_y),
-        (week3_X, week3_y),
-        (week4_X, week4_y),
-        (week5_X, week5_y),
-        (week6_X, week6_y),
-    ]
-    estimator = AgodaCancellationEstimator(single=False)
-    estimator.fit(X, y)
-    df = estimator.loss_multiple(samples)
-    df.to_csv('./results/comparison.csv', index=False)
+    for i in range(2, 11):
+        print(f"Starting weight {i}")
+        samples = [
+            (week1_X, week1_y),
+            (week2_X, week2_y),
+            (week3_X, week3_y),
+            (week4_X, week4_y),
+            (week5_X, week5_y),
+            (week6_X, week6_y),
+        ]
+        weights = np.ones(y.shape[0])
+        for j, val in enumerate(y):
+            if val == 1:
+                weights[j] = i
+        estimator = AgodaCancellationEstimator(single=False)
+        estimator.fit_with_weight(X, y, weights)
+        df = estimator.loss_multiple(samples)
+        df.to_csv(f'./results/comparison_weight_{i}.csv', index=False)
+        print(f"Finished weight {i}")
 
-    results = np.zeros(6)
-    for i, sample in enumerate(samples):
-        test_X, test_y = sample
-        results[i] = estimator.loss(test_X, test_y)
-    mean = np.mean(results)
-    median = np.median(results)
-    min_res = np.min(results)
-    max_res = np.max(results)
-    print(f"regular estimator: mean {mean}, median {median}, min {min_res}, max {max_res}")
+    # results = np.zeros(6)
+    # for i, sample in enumerate(samples):
+    #     test_X, test_y = sample
+    #     results[i] = estimator.loss(test_X, test_y)
+    # mean = np.mean(results)
+    # median = np.median(results)
+    # min_res = np.min(results)
+    # max_res = np.max(results)
+    # print(f"regular estimator: mean {mean}, median {median}, min {min_res}, max {max_res}")
 
     # Fit model over data
     # estimator = AgodaCancellationEstimator()

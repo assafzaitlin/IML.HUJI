@@ -75,7 +75,7 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     estimator.fit(train_X.to_numpy(), train_y.to_numpy())
     test_err = estimator.loss(test_X.to_numpy(), test_y.to_numpy())
     test_err = round(test_err, 2)
-    print(f"best polynomial degree: {best_degree}. test error: {test_err}. best error: {best_error}")
+    print(f"best polynomial degree: {best_degree}. test error: {test_err}")
 
 
 def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 500):
@@ -126,6 +126,8 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
     fig.add_trace(go.Scatter(y=lasso_validation_errors, x=lambdas,
                              mode='lines+markers', name='lasso validation error'))
     fig.update_layout(title="Error of Ridge & Lasso regressors")
+    fig.update_xaxes(title='lambda value')
+    fig.update_yaxes(title='MSE')
     fig.show()
 
     # Question 8 - Compare best Ridge model, best Lasso model and Least Squares model
@@ -139,7 +141,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
     ls_loss = round(ls.loss(test_X, test_y), 3)
     ridge_best_lambda = round(ridge_best_lambda, 3)
     lasso_best_lambda = round(lasso_best_lambda, 3)
-    print(f"LS est error: {ls_loss}, "
+    print(f"LS best error: {ls_loss}, "
           f"Ridge error: {ridge_loss} with optimal lambda: {ridge_best_lambda}, "
           f"Lasso error: {lasso_loss} with optimal lambda: {lasso_best_lambda}")
 

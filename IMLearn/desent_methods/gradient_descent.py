@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, NoReturn
+from typing import Callable, NoReturn, Optional
 import numpy as np
 
 from IMLearn.base import BaseModule, BaseLR
@@ -76,7 +76,7 @@ class GradientDescent:
         self.max_iter_ = max_iter
         self.callback_ = callback
 
-    def fit(self, f: BaseModule, X: np.ndarray, y: np.ndarray):
+    def fit(self, f: BaseModule, X: Optional[np.ndarray], y: Optional[np.ndarray]):
         """
         Optimize module using Gradient Descent iterations over given input samples and responses
 
@@ -119,29 +119,33 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        avg = f.weights_.copy()
-        max_res = f.weights_.copy()
-        max_norm = f.compute_output(X=X, y=y)
-        x = f.weights_
-        output = max_norm
+        avg = f.weights.copy()
+        min_res = f.weights.copy()
+        min_norm = f.compute_output(X=X, y=y)
+        x = f.weights.copy()
+        output = min_norm
+        grad = f.compute_jacobian(X=X, y=y)
+        eta = self.learning_rate_.lr_step(t=0)
+        self.callback_(solver=self, weights=f.weights, val=output,
+                       grad=grad, t=0, eta=eta, delta=np.linalg.norm(f.weights))
         for t in range(self.max_iter_):
             grad = f.compute_jacobian(X=X, y=y)
             eta = self.learning_rate_.lr_step(t=t)
-            x += eta * grad
+            prev_x = x
+            x = prev_x - eta * grad
             avg = (avg * (t + 1) + x) / (t + 2)
-            f.weights_ = x
-            prev_output = output
+            f.weights = x
             output = f.compute_output(X=X, y=y)
-            if output > max_norm:
-                max_res = x.copy()
-                max_norm = output
-            delta = np.linalg.norm(output - prev_output)
-            self.callback_(self, solver=self, weights=f.weights_, val=output,
-                           grad=grad, t=t, eta=eta, delta=delta)
-            if delta < self.tol_:
+            if output < min_norm:
+                min_res = x
+                min_norm = output
+            delta = np.linalg.norm(x - prev_x)
+            self.callback_(solver=self, weights=f.weights, val=output,
+                           grad=grad, t=t+1, eta=eta, delta=delta)
+            if delta <= self.tol_:
                 break
         if self.out_type_ == 'last':
             return x
         elif self.out_type_ == 'average':
             return avg
-        return max_res
+        return min_res

@@ -33,7 +33,7 @@ class L2(BaseModule):
         output: ndarray of shape (1,)
             Value of function at point self.weights
         """
-        return np.linalg.norm(self.weights_) ** 2
+        return np.linalg.norm(self.weights) ** 2
 
     def compute_jacobian(self, **kwargs) -> np.ndarray:
         """
@@ -49,7 +49,7 @@ class L2(BaseModule):
         output: ndarray of shape (n_in,)
             L2 derivative with respect to self.weights at point self.weights
         """
-        return 2 * self.weights_
+        return 2 * self.weights
 
 
 class L1(BaseModule):
@@ -78,7 +78,7 @@ class L1(BaseModule):
         output: ndarray of shape (1,)
             Value of function at point self.weights
         """
-        return np.linalg.norm(self.weights_, ord=1) ** 2
+        return np.linalg.norm(self.weights, ord=1) ** 2
 
     def compute_jacobian(self, **kwargs) -> np.ndarray:
         """
@@ -94,7 +94,7 @@ class L1(BaseModule):
         output: ndarray of shape (n_in,)
             L1 derivative with respect to self.weights at point self.weights
         """
-        return np.sign(self.weights_)
+        return np.sign(self.weights)
 
 
 class LogisticModule(BaseModule):
@@ -131,7 +131,13 @@ class LogisticModule(BaseModule):
         output: ndarray of shape (1,)
             Value of function at point self.weights
         """
-        raise NotImplementedError()
+        m = y.shape[0]
+        x_w_inner = X @ self.weights
+        inner_product = y @ x_w_inner
+        exp = np.log(1 + np.exp(x_w_inner))
+        inner_sum = np.sum(inner_product)
+        exp_sum = np.sum(exp)
+        return (exp_sum - inner_sum) / m
 
     def compute_jacobian(self, X: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -150,8 +156,13 @@ class LogisticModule(BaseModule):
         output: ndarray of shape (n_features,)
             Derivative of function with respect to self.weights at point self.weights
         """
-        raise NotImplementedError()
-
+        m = y.shape[0]
+        yx = y @ X
+        xw = X @ self.weights
+        exp = np.exp(xw)
+        xexp = X @ exp
+        exp_part = xexp / (1 + exp)
+        return (exp_part - yx) / m
 
 class RegularizedModule(BaseModule):
     """
@@ -160,12 +171,9 @@ class RegularizedModule(BaseModule):
     for F(w) being some fidelity function, R(w) some regularization function and lambda
     the regularization parameter
     """
-    def __init__(self,
-                 fidelity_module: BaseModule,
-                 regularization_module: BaseModule,
-                 lam: float = 1.,
-                 weights: np.ndarray = None,
-                 include_intercept: bool = True):
+    def __init__(self, fidelity_module: BaseModule,
+                 regularization_module: BaseModule, lam: float = 1.,
+                 weights: np.ndarray = None, include_intercept: bool = True):
         """
         Initialize a regularized objective module instance
 
@@ -187,7 +195,8 @@ class RegularizedModule(BaseModule):
             Should fidelity term (and not regularization term) include an intercept or not
         """
         super().__init__()
-        self.fidelity_module_, self.regularization_module_, self.lam_ = fidelity_module, regularization_module, lam
+        self.fidelity_module_, self.regularization_module_, self.lam_ = \
+            fidelity_module, regularization_module, lam
         self.include_intercept_ = include_intercept
 
         if weights:
@@ -207,7 +216,7 @@ class RegularizedModule(BaseModule):
         output: ndarray of shape (1,)
             Value of function at point self.weights
         """
-        raise NotImplementedError()
+        return self.fidelity_module_.compute_output() + self.lam_ * self.regularization_module_.compute_output()
 
     def compute_jacobian(self, **kwargs) -> np.ndarray:
         """
@@ -223,7 +232,7 @@ class RegularizedModule(BaseModule):
         output: ndarray of shape (n_in,)
             Derivative with respect to self.weights at point self.weights
         """
-        raise NotImplementedError()
+        return self.fidelity_module_.compute_jacobian() + self.lam_ * self.regularization_module_.compute_jacobian()
 
     @property
     def weights(self):

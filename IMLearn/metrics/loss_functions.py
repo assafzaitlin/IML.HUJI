@@ -38,7 +38,7 @@ def misclassification_error(y_true: np.ndarray, y_pred: np.ndarray, normalize: b
     """
     count = 0
     for i in range(len(y_true)):
-        if y_true[i] * y_pred[i] < 0:
+        if y_true[i] != y_pred[i]:
             count += 1
     if normalize:
         count /= len(y_true)

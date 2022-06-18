@@ -85,19 +85,25 @@ class LogisticRegression(BaseEstimator):
         Fits model using specified `self.solver_` passed when instantiating
         class and includes an intercept if specified by self.include_intercept_
         """
+        if self.include_intercept_:
+            X = np.c_[np.ones(X.shape[0]), X]
         init = np.random.randn(X.shape[1])
+        # init_for_module = init
+        # if self.include_intercept_:
+        #     init_for_module = init_for_module[1:]
         lm = LogisticModule(init)
-        if penalty == 'none':
+        if self.penalty_ == 'none':
             module = lm
         else:
-            if penalty == 'l1':
+            if self.penalty_ == 'l1':
                 reg = L1(init)
             else:
                 reg = L2(init)
-            module = RegularizedModule(lm, reg, lam)
-        if self.include_intercept_:
-            X = np.c_[np.ones(X.shape[0]), X]
-        self.coefs_ = self.solver_.fit(module, X, y)
+            module = RegularizedModule(lm, reg, self.lam_)
+        coefs = self.solver_.fit(module, X, y)
+        # if self.include_intercept_:
+        #     coefs = np.concatenate([np.array([init[0]]), coefs])
+        self.coefs_ = coefs
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -113,10 +119,8 @@ class LogisticRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        if self.include_intercept_:
-            X = np.c_[np.ones(X.shape[0]), X]
-        regression = X @ self.coefs_
-        classification = np.where(regression >= self.alpha_, 1, -1)
+        prob = self.predict_proba(X)
+        classification = np.where(prob >= self.alpha_, 1, 0)
         return classification
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:

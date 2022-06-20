@@ -101,6 +101,10 @@ def plot_delta(values, title, names=None):
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
     losses = np.zeros((len(etas), 2))
+    l1_deltas = []
+    l1_names = []
+    l2_deltas = []
+    l2_names = []
     for i, eta in enumerate(etas):
         lr = FixedLR(eta)
         callback, values, weights = get_gd_state_recorder_callback()
@@ -110,8 +114,8 @@ def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e /
         plot = plot_descent_path(module=L1, descent_path=np.array(weights),
                                  title=f"L1 descent path with eta: {eta}")
         plot.show()
-        plot2 = plot_delta([values], f"L1 deltas with eta: {eta}")
-        plot2.show()
+        l1_deltas.append(values.copy())
+        l1_names.append(f"eta={eta}")
         min_loss = np.min(values)
         losses[i][0] = min_loss
         values.clear()
@@ -121,13 +125,19 @@ def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e /
         plot = plot_descent_path(module=L2, descent_path=np.array(weights),
                                  title=f"L2 descent path with eta: {eta}")
         plot.show()
-        plot2 = plot_delta([values], f"L2 deltas with eta: {eta}")
-        plot2.show()
+        l2_deltas.append(values)
+        l2_names.append(f"eta={eta}")
         min_loss = np.min(values)
         losses[i][1] = min_loss
     min_ind_l1, min_ind_l2 = np.argmin(losses, axis=0)
     print(f"best eta for L1 is {etas[min_ind_l1]} with loss {losses[min_ind_l1][0]}")
     print(f"best eta for L2 is {etas[min_ind_l2]} with loss {losses[min_ind_l2][1]}")
+    l1_graph = plot_delta(l1_deltas, "Loss as function of number of iterations"
+                                     " for L1", l1_names)
+    l1_graph.show()
+    l2_graph = plot_delta(l2_deltas, "Loss as function of number of iterations"
+                                     " for L2", l2_names)
+    l2_graph.show()
 
 def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                     eta: float = .1,
@@ -135,7 +145,7 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
     vals = []
     min_loss = np.zeros(len(gammas))
-    decision_surface = None
+    decision_surface = decision_surface2 = None
     for i, gamma in enumerate(gammas):
         lr = ExponentialLR(eta, gamma)
         callback, values, weights = get_gd_state_recorder_callback()
@@ -146,9 +156,18 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
         min_loss[i] = np.min(values)
         if gamma == 0.95:
             decision_surface = plot_descent_path(module=L1,
-                                                 descent_path=np.array(weights),
+                                                 descent_path=np.array(weights.copy()),
                                                  title="descent path with "
-                                                       "gamma=0.95")
+                                                       "gamma=0.95 for L1")
+            l2 = L2(init)
+            values.clear()
+            weights.clear()
+            gd = GradientDescent(learning_rate=lr, callback=callback)
+            gd.fit(l2, None, None)
+            decision_surface2 = plot_descent_path(module=L2,
+                                                  descent_path=np.array(weights),
+                                                  title="descent path with "
+                                                        "gamma=0.95 for L2")
     names = [f"gamma: {gamma}" for gamma in gammas]
     fig = plot_delta(vals, "Loss as num of iterations for all gammas", names)
     fig.show()
@@ -161,6 +180,7 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
 
     # Plot descent path for gamma=0.95
     decision_surface.show()
+    decision_surface2.show()
 
 
 def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8) -> \

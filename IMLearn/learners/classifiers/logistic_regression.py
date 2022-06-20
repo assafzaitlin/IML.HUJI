@@ -3,6 +3,7 @@ import numpy as np
 from IMLearn import BaseEstimator
 from IMLearn.desent_methods import GradientDescent
 from IMLearn.desent_methods.modules import LogisticModule, RegularizedModule, L1, L2
+from IMLearn.desent_methods.learning_rate import FixedLR
 
 
 class LogisticRegression(BaseEstimator):
@@ -33,7 +34,8 @@ class LogisticRegression(BaseEstimator):
     """
 
     def __init__(self, include_intercept: bool = True,
-                 solver: GradientDescent = GradientDescent(),
+                 solver: GradientDescent = GradientDescent(learning_rate=FixedLR(1e-4),
+                                                           max_iter=20000),
                  penalty: str = "none", lam: float = 1, alpha: float = .5):
         """
         Instantiate a linear regression estimator
@@ -87,22 +89,21 @@ class LogisticRegression(BaseEstimator):
         """
         if self.include_intercept_:
             X = np.c_[np.ones(X.shape[0]), X]
-        init = np.random.randn(X.shape[1])
-        # init_for_module = init
-        # if self.include_intercept_:
-        #     init_for_module = init_for_module[1:]
+        init = np.random.randn(X.shape[1]) / (X.shape[1] ** 0.5)
+        init_for_reg = init
+        if self.include_intercept_:
+            init_for_reg = init_for_reg[1:]
         lm = LogisticModule(init)
         if self.penalty_ == 'none':
             module = lm
         else:
             if self.penalty_ == 'l1':
-                reg = L1(init)
+                reg = L1(init_for_reg)
             else:
-                reg = L2(init)
-            module = RegularizedModule(lm, reg, self.lam_)
+                reg = L2(init_for_reg)
+            module = RegularizedModule(lm, reg, self.lam_, weights=init,
+                                       include_intercept=self.include_intercept_)
         coefs = self.solver_.fit(module, X, y)
-        # if self.include_intercept_:
-        #     coefs = np.concatenate([np.array([init[0]]), coefs])
         self.coefs_ = coefs
 
     def _predict(self, X: np.ndarray) -> np.ndarray:

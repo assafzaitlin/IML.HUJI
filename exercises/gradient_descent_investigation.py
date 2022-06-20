@@ -125,7 +125,9 @@ def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e /
         plot2.show()
         min_loss = np.min(values)
         losses[i][1] = min_loss
-    print(losses)
+    min_ind_l1, min_ind_l2 = np.argmin(losses, axis=0)
+    print(f"best eta for L1 is {etas[min_ind_l1]} with loss {losses[min_ind_l1][0]}")
+    print(f"best eta for L2 is {etas[min_ind_l2]} with loss {losses[min_ind_l2][1]}")
 
 def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                     eta: float = .1,
@@ -152,7 +154,10 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
     fig.show()
 
     # Plot algorithm's convergence for the different values of gamma
-    print(min_loss)
+    min_ind = int(np.argmin(min_loss))
+    best_gamma = gammas[min_ind]
+    best_loss = min_loss[min_ind]
+    print(f"Best loss is with gamma {best_gamma}. loss is {best_loss}")
 
     # Plot descent path for gamma=0.95
     decision_surface.show()
@@ -216,15 +221,19 @@ def fit_logistic_regression():
     scatter = go.Scatter(x=fpr, y=tpr, mode='lines')
     fig = go.Figure([scatter], layout=go.Layout(title="ROC for all alpha values"))
     fig.update_xaxes(title="False positive").update_yaxes(title="True positive")
-    # fig.show()
-    best_alpha = int(np.argmax(diff)) / 100
-    print(f"best alpha is: {best_alpha}")
+    fig.show()
+    best_alpha = np.argmax(diff) / 100
+    model = LogisticRegression(alpha=best_alpha)
+    model.fit(X_train.to_numpy(), y_train.to_numpy())
+    loss = model.loss(X_test.to_numpy(), y_test.to_numpy())
+    print(f"best alpha is: {best_alpha} with error {loss}")
 
     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
     # of regularization parameter
+    lambdas = np.array([0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1])
     for i in range(1, 3):
-        lambdas = np.linspace(0, 1, 6)
         validation_scores = np.zeros(lambdas.shape[0])
+        train_scores = np.zeros(lambdas.shape[0])
         for j, lam in enumerate(lambdas):
             model = LogisticRegression(penalty=f"l{i}", lam=lam)
             train_score, validation_score = cross_validate(model,
@@ -232,6 +241,7 @@ def fit_logistic_regression():
                                                            y_train.to_numpy(),
                                                            misclassification_error)
             validation_scores[j] = validation_score
+            train_scores[j] = train_score
         best_lambda = lambdas[np.argmin(validation_scores)]
         model = LogisticRegression(penalty=f"l{i}", lam=best_lambda)
         model.fit(X_train.to_numpy(), y_train.to_numpy())
@@ -241,6 +251,6 @@ def fit_logistic_regression():
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # compare_fixed_learning_rates()
-    # compare_exponential_decay_rates()
+    compare_fixed_learning_rates()
+    compare_exponential_decay_rates()
     fit_logistic_regression()

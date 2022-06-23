@@ -1,4 +1,5 @@
-from challenge.agoda_cancellation_estimator import AgodaCancellationEstimator
+from challenge.agoda_cancellation_estimator import AgodaCancellationEstimator,\
+    calc_f1_macro
 from IMLearn.utils import split_train_test
 from typing import Tuple
 from sklearn.model_selection import train_test_split
@@ -243,7 +244,7 @@ def evaluate_and_export(estimator, X: np.ndarray, filename: str):
     filename:
         path to store file at
     """
-    pd.DataFrame(estimator.predict_with_threshold(X, threshold=0.08),
+    pd.DataFrame(estimator.predict_with_threshold(X, threshold=0.415),
                  columns=["predicted_values"]).to_csv(filename, index=False)
 
 
@@ -267,6 +268,42 @@ if __name__ == '__main__':
     week5_y = pd.read_csv("./test_sets/week_5_labels.csv")["cancel"]
     week6_X, _ = load_data("./test_sets/week_6_test_data.csv", is_train=False)
     week6_y = pd.read_csv("./test_sets/week_6_labels.csv")["cancel"]
+    week7_X, _ = load_data("./test_sets/week_7_test_data.csv", is_train=False)
+    week7_y = pd.read_csv("./test_sets/week_7_labels.csv")["cancel"]
+    week8_X, _ = load_data("./test_sets/week_8_test_data.csv", is_train=False)
+    week8_y = pd.read_csv("./test_sets/week_8_labels.csv")["cancel"]
+    week9_X, _ = load_data("./test_sets/week_9_test_data.csv", is_train=False)
+    week9_y = pd.read_csv("./test_sets/week_9_labels.csv")["cancel"]
+    week10_X, _ = load_data("./test_sets/week_10_test_data.csv", is_train=False)
+
+    # estimator = AgodaCancellationEstimator()
+    # # estimator.fit_with_weight(X, y, weights)
+    # print("Fitting")
+    # estimator.fit(X, y)
+    # print("Estimating")
+    # print("Week1")
+    # estimator.loss(week1_X, week1_y)
+    # print("Week2")
+    # estimator.loss(week2_X, week2_y)
+    # print("Week3")
+    # estimator.loss(week3_X, week3_y)
+    # print("Week4")
+    # estimator.loss(week4_X, week4_y)
+    # print("Week5")
+    # estimator.loss(week5_X, week5_y)
+    # print("Week6")
+    # estimator.loss(week6_X, week6_y)
+    # print("Week7")
+    # estimator.loss(week7_X, week7_y)
+    # print("Week8")
+    # estimator.loss(week8_X, week8_y)
+    # print("Week9")
+    # estimator.loss(week9_X, week9_y)
+    # df = estimator.loss_multiple([(week8_X, week8_y), (week9_X, week9_y)])
+    # d = df.to_dict()
+    # rec = df.to_records()
+    # print(d)
+    # print(rec)
 
     # train_X, test_X, train_y, test_y = train_test_split(X, y, test_size=0.25)
 
@@ -301,25 +338,26 @@ if __name__ == '__main__':
     # check_estimator_on_train.loss(test_X.to_numpy(), test_y.to_numpy())
 
     # Test for checking multiple estimators
-    for i in range(2, 11):
-        print(f"Starting weight {i}")
-        samples = [
-            (week1_X, week1_y),
-            (week2_X, week2_y),
-            (week3_X, week3_y),
-            (week4_X, week4_y),
-            (week5_X, week5_y),
-            (week6_X, week6_y),
-        ]
-        weights = np.ones(y.shape[0])
-        for j, val in enumerate(y):
-            if val == 1:
-                weights[j] = i
-        estimator = AgodaCancellationEstimator(single=False)
-        estimator.fit_with_weight(X, y, weights)
-        df = estimator.loss_multiple(samples)
-        df.to_csv(f'./results/comparison_weight_{i}.csv', index=False)
-        print(f"Finished weight {i}")
+    # for i in range(1, 4):
+    #     print(f"Starting weight {i}")
+    #     samples = [
+    #         # (week1_X, week1_y),
+    #         # (week2_X, week2_y),
+    #         # (week3_X, week3_y),
+    #         # (week4_X, week4_y),
+    #         # (week5_X, week5_y),
+    #         # (week6_X, week6_y),
+    #         (week9_X, week9_y)
+    #     ]
+    #     weights = np.ones(y.shape[0])
+    #     for j, val in enumerate(y):
+    #         if val == 1:
+    #             weights[j] = i
+    #     estimator = AgodaCancellationEstimator(single=False)
+    #     estimator.fit_with_weight(X, y, weights)
+    #     df = estimator.loss_multiple(samples)
+    #     df.to_csv(f'./results/comparison4_weights_{i}.csv', index=False)
+    #     print(f"Finished weight {i}")
 
     # results = np.zeros(6)
     # for i, sample in enumerate(samples):
@@ -332,9 +370,9 @@ if __name__ == '__main__':
     # print(f"regular estimator: mean {mean}, median {median}, min {min_res}, max {max_res}")
 
     # Fit model over data
-    # estimator = AgodaCancellationEstimator()
-    # estimator.fit(X, y)
-    #
-    # # Store model predictions over test set
-    # evaluate_and_export(estimator, test.to_numpy(),
-    #                     "2055501016_208543116_207129420.csv")
+    estimator = AgodaCancellationEstimator()
+    estimator.fit(X, y)
+
+    # Store model predictions over test set
+    evaluate_and_export(estimator, week10_X.to_numpy(),
+                        "205550106_208543116_207129420.csv")
